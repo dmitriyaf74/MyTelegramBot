@@ -1,10 +1,14 @@
-﻿using Telegram.Bot;
+﻿using MyTelegramBot.secure;
+using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace HomeWork24
 {
     internal class Program
     {
+        private static MyAppConfig appConfig = new MyAppConfig();
+
+
         private static void UpdateReceived(ITelegramBotClient botClient, Update update, CancellationToken token)
         {
             //var msg:string = update.Message?.ToString() ?? "Error";
@@ -22,8 +26,13 @@ namespace HomeWork24
 
         static async Task Main()
         {
+            if (!appConfig.ReadConfig())
+            {
+                return;
+            }
+
             var cts = new CancellationTokenSource();
-            var bot = new TelegramBotClient("");
+            var bot = new TelegramBotClient(appConfig.telegramApiKey);
 
             var me = await bot.GetMe(); //Информация о боте
             Console.WriteLine($"Hello, {me.FirstName} {me.LastName} with {me.Username} an id {me.Id}!");
