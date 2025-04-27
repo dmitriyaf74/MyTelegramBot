@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using System.IO;
-using System.Xml;
+﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace MyTelegramBot.secure
 {
@@ -27,10 +19,16 @@ namespace MyTelegramBot.secure
 
         public bool ReadConfig()
         {
-            var vConfigFilePath = AppContext.BaseDirectory + "..\\..\\..\\";
             var vConfigFileName = "appsettings.json";
+            var vConfigFilePath = AppContext.BaseDirectory;
             if (!File.Exists(vConfigFilePath + vConfigFileName))
-                WriteDefaultConfig(vConfigFilePath + vConfigFileName);
+            {
+                vConfigFilePath = vConfigFilePath + "..\\..\\..\\";
+                if (!File.Exists(vConfigFilePath + vConfigFileName))
+                {
+                    WriteDefaultConfig(vConfigFilePath + vConfigFileName);
+                }
+            }
 
             var config = new ConfigurationBuilder()
                 .SetBasePath(vConfigFilePath)
