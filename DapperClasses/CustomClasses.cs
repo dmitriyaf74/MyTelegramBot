@@ -2,9 +2,10 @@
 {
     abstract class CustomQuery
     {
-        public abstract long InsertUser(string AconnectionString, CustomUser Auser);
-        public abstract CustomUser SelectUser(string AconnectionString, long AUser_Ident);
-        public abstract List<CustomRole> SelectRoles(string AconnectionString, long Auser_id);
+        public abstract long InsertUser(CustomUser Auser);
+        public abstract CustomUser SelectUser(long AUser_Ident);
+        public abstract List<CustomRole> SelectRoles(long Auser_id);
+        public abstract bool HasRole(long Auser_id, long Arole_id);
     }
     internal class CustomUser
     {

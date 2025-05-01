@@ -37,7 +37,6 @@ namespace MyTelegramBot
             await cts.CancelAsync();
         }
 
-        public static string ConnectionString;
         public static CustomQuery Query;
         static List<CustomRole> RoleList;
         public static ITelegramBotClient bot;
@@ -127,7 +126,7 @@ namespace MyTelegramBot
                 //botClient.SendMessage(update.Message.Chat.Id, info, cancellationToken: token);
                 //botClient.SendMessage(update.Message.Chat.Id, info, replyMarkup: buttons);
 
-                var vuser = Query.SelectUser(ConnectionString, update.Message.From.Id);
+                var vuser = Query.SelectUser(update.Message.From.Id);
                 var vUserId = vuser.Id;
                 if (vuser == null) 
                 {
@@ -137,10 +136,10 @@ namespace MyTelegramBot
                     vuser.FirstName = update.Message.From.FirstName;
                     vuser.LastName = update.Message.From.LastName;
                     vuser.Roles_id = 0;
-                    vUserId = Query.InsertUser(ConnectionString, vuser);
+                    vUserId = Query.InsertUser(vuser);
                 }
                 if (RoleList is null)
-                    RoleList = Query.SelectRoles(ConnectionString, vUserId);
+                    RoleList = Query.SelectRoles(vUserId);
 
                 SelectRole(botClient, update, token);
             }

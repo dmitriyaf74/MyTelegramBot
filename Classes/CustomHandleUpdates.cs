@@ -11,7 +11,6 @@ namespace MyTelegramBot.Classes
 
     internal class CustomHandleUpdates
     {
-        public static string ConnectionString;
         public static CustomQuery Query;
         public static ProcShowMessage procShowMessage { get; set; }
 

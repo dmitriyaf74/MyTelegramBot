@@ -1,4 +1,5 @@
-﻿using Telegram.Bot;
+﻿using MyTelegramBot;
+using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
@@ -6,7 +7,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 
-public delegate bool UpdateReceivedDelegate(ITelegramBotClient botClient, Update update, CancellationToken token);
+public delegate void UpdateReceivedDelegate(ITelegramBotClient botClient, Update update, CancellationToken token);
 
 public class TelegramSession
 {
@@ -58,8 +59,8 @@ public class TelegramSession
 
             if (UpdRecDelegate != null) // Важно проверить, что делегат не равен null, иначе будет исключение.
             {
-                var res = UpdRecDelegate(botClient, update, cancellationToken);
-                if (!res)
+                /* var res =*/ UpdRecDelegate(botClient, update, cancellationToken);
+                if (!HandleUpdates.BeginUpdate)
                 {
                     ReplyKeyboardRemove removeKeyboard = new ReplyKeyboardRemove();
 

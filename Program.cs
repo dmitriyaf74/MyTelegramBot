@@ -34,8 +34,7 @@ namespace HomeWork24
             var telegramSession = new TelegramSession(appConfig.TelegramApiKey);
 
             //HandleUpdates handleUpdates = new HandleUpdates();
-            HandleUpdates.ConnectionString = appConfig.ConnectionString;
-            HandleUpdates.Query = new pgQuery();
+            HandleUpdates.Query = new pgQuery(appConfig.ConnectionString);
 
             HandleUpdates.RegisterHandlesUpdates(ref telegramSession.UpdRecDelegate);
 
