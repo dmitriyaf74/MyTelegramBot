@@ -14,18 +14,40 @@ namespace HomeWork24
     internal class Program
     {
 
+        /*public static void Method1(string message)
+        {
+            Console.WriteLine("Method1: " + message);
+        }
+
+        public static void Method2(string message)
+        {
+            Console.WriteLine("Method2: " + message);
+        }*/
+
         public static async Task Main()
         {
             MyBot.procShowMessage = Console.WriteLine;
 
-          MyAppConfig appConfig = new();
-          if (!appConfig.ReadConfig())
-            return;
+            MyAppConfig appConfig = new();
+            if (!appConfig.ReadConfig())
+              return;
+            var telegramSession = new TelegramSession(appConfig.TelegramApiKey);
 
-            MyBot.ConnectionString = appConfig.ConnectionString;
-            MyBot.Query = new pgQuery();
-            await MyBot.RunBot(appConfig.TelegramApiKey);
-            
+            //HandleUpdates handleUpdates = new HandleUpdates();
+            HandleUpdates.ConnectionString = appConfig.ConnectionString;
+            HandleUpdates.Query = new pgQuery();
+
+            HandleUpdates.RegisterHandlesUpdates(ref telegramSession.UpdRecDelegate);
+
+            telegramSession.StartReceiving();
+            Console.ReadLine();
+            telegramSession.StopReceiving();
+
+
+            //MyBot.ConnectionString = appConfig.ConnectionString;
+            //MyBot.Query = new pgQuery();
+            //await MyBot.RunBot(appConfig.TelegramApiKey);
+
         }
 
     }
