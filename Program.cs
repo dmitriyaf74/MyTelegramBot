@@ -1,5 +1,7 @@
 ﻿using System;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using MyTelegramBot;
+using MyTelegramBot.DapperClasses;
 using MyTelegramBot.secure;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
@@ -14,24 +16,16 @@ namespace HomeWork24
 
         public static async Task Main()
         {
-            if (!MyBot.appConfig.ReadConfig())
-            {
-                return;
-            }
-
             MyBot.procShowMessage = Console.WriteLine;
 
-            var cts = new CancellationTokenSource();
-            MyBot.bot = new TelegramBotClient(MyBot.appConfig.telegramApiKey);
+          MyAppConfig appConfig = new();
+          if (!appConfig.ReadConfig())
+            return;
 
-            var me = await MyBot.bot.GetMe(); //Информация о боте
-            Console.WriteLine($"Hello, {me.FirstName} {me.LastName} with {me.Username} an id {me.Id}!");
-            MyBot.bot.StartReceiving(MyBot.UpdateReceived, MyBot.ExceptionHandler, new Telegram.Bot.Polling.ReceiverOptions()
-            {
-                AllowedUpdates = [UpdateType.Message]
-            }, cts.Token);
-            Console.ReadLine();
-            await cts.CancelAsync();
+            MyBot.ConnectionString = appConfig.ConnectionString;
+            MyBot.Query = new pgQuery();
+            await MyBot.RunBot(appConfig.TelegramApiKey);
+            
         }
 
     }

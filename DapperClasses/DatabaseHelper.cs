@@ -5,9 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Npgsql;
-using Dapper;
-using System.Collections.Generic;
-using System.Data.SqlClient; // Или другой подходящий провайдер
 
 namespace MyTelegramBot.DapperClasses
 {

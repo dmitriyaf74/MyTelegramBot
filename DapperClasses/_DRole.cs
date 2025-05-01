@@ -9,20 +9,17 @@ using Dapper;
 
 namespace MyTelegramBot.DapperClasses
 {
-    internal class Role
+    internal class _DRole
     {
         public long Id { get; set; }
         public string Name { get; set; }
-    }
 
-    internal class QueryRoles
-    {
-        public static List<Role> SelectRoles(string AconnectionString, long Auser_id)
+        public static List<_DRole> SelectRoles(string AconnectionString, long Auser_id)
         {
             string sql = @"select r.id, r.name from userroles ur join roles r on r.id = ur.role_id where ur.user_id = @user_id and ur.enabled = true";
             DatabaseHelper dbHelper = new DatabaseHelper(AconnectionString);
             object parameters = new { user_id = Auser_id };
-            List<Role> items = dbHelper.GetList<Role>(sql, parameters);
+            List<_DRole> items = dbHelper.GetList<_DRole>(sql, parameters);
 
             return items;
         }

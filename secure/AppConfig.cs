@@ -5,7 +5,8 @@ namespace MyTelegramBot.secure
 {
     internal class MyAppConfig
     {
-        public string telegramApiKey;
+        public string TelegramApiKey;
+        public string ConnectionString;
 
         protected void WriteDefaultConfig(string AFileName)
         {
@@ -35,9 +36,10 @@ namespace MyTelegramBot.secure
                 .AddJsonFile(vConfigFileName)
                 .Build();
 
-            telegramApiKey = config["Telegram:ApiKey"];
+            TelegramApiKey = config["Telegram:ApiKey"];
+            ConnectionString = config["Telegram:ConnectionString"];
 
-            if (string.IsNullOrEmpty(telegramApiKey))
+            if (string.IsNullOrEmpty(TelegramApiKey))
                 return false;
 
             return true;

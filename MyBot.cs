@@ -17,11 +17,32 @@ namespace MyTelegramBot
 {
     internal class MyBot
     {
-        static string ConnectionString = "Host=localhost;Database=TelegramHelper;Username=postgres;Password=postgres";
-        static List<Role> RoleList;
+        public static async Task RunBot(string token)
+        {
+            
+            bot = new TelegramBotClient(token); // Инициализация клиента бота с использованием токена
+
+            var me = await MyBot.bot.GetMeAsync(); //Информация о боте // Получение информации о боте
+            DoConShowMessage($"Hello, {me.FirstName} {me.LastName} with {me.Username} an id {me.Id}!");
+
+            //bot.OnMessage += Bot_OnMessage; // Подписываемся на событие получения сообщения
+            //bot.StartReceiving(); // Запускаем прослушивание входящих сообщений
+
+            var cts = new CancellationTokenSource();
+            bot.StartReceiving(UpdateReceived, ExceptionHandler, new Telegram.Bot.Polling.ReceiverOptions()
+            {
+                AllowedUpdates = [UpdateType.Message]
+            }, cts.Token);
+            Console.ReadLine();
+            await cts.CancelAsync();
+        }
+
+        public static string ConnectionString;
+        public static CustomQuery Query;
+        static List<CustomRole> RoleList;
         public static ITelegramBotClient bot;
 
-        public static MyAppConfig appConfig = new MyAppConfig();
+        //public static MyAppConfig appConfig = new MyAppConfig();
         public delegate void ProcShowMessage(string message);
 
         public static ProcShowMessage procShowMessage {  get; set; }
@@ -106,20 +127,20 @@ namespace MyTelegramBot
                 //botClient.SendMessage(update.Message.Chat.Id, info, cancellationToken: token);
                 //botClient.SendMessage(update.Message.Chat.Id, info, replyMarkup: buttons);
 
-                DapperClasses.User vuser = QueryUsers.SelectUser(ConnectionString, update.Message.From.Id);
+                var vuser = Query.SelectUser(ConnectionString, update.Message.From.Id);
                 var vUserId = vuser.Id;
                 if (vuser == null) 
                 {
-                    vuser = new DapperClasses.User();
+                    vuser = new CustomUser();
                     vuser.UserName = update.Message.From.Username;
                     vuser.User_Ident = update.Message.From.Id;
                     vuser.FirstName = update.Message.From.FirstName;
                     vuser.LastName = update.Message.From.LastName;
                     vuser.Roles_id = 0;
-                    vUserId = QueryUsers.InsertUser(ConnectionString, vuser);
+                    vUserId = Query.InsertUser(ConnectionString, vuser);
                 }
                 if (RoleList is null)
-                    RoleList = QueryRoles.SelectRoles(ConnectionString, vUserId);
+                    RoleList = Query.SelectRoles(ConnectionString, vUserId);
 
                 SelectRole(botClient, update, token);
             }
@@ -141,25 +162,5 @@ namespace MyTelegramBot
             DoConShowMessage(exception.Message);
         }
 
-
-        //public static async Task RunBot()
-        //{
-        //    if (!appConfig.ReadConfig())
-        //    {
-        //        return;
-        //    }
-
-        //    var cts = new CancellationTokenSource();
-        //    var bot = new TelegramBotClient(appConfig.telegramApiKey);
-
-        //    var me = await bot.GetMe(); //Информация о боте
-        //    Console.WriteLine($"Hello, {me.FirstName} {me.LastName} with {me.Username} an id {me.Id}!");
-        //    bot.StartReceiving(UpdateReceived, ExceptionHandler, new Telegram.Bot.Polling.ReceiverOptions()
-        //    {
-        //        AllowedUpdates = [Telegram.Bot.Types.Enums.UpdateType.Message]
-        //    }, cts.Token);
-        //    Console.ReadLine();
-        //    await cts.CancelAsync();
-        //}
     }
 }

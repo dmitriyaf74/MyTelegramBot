@@ -8,7 +8,7 @@ using Dapper;
 
 namespace MyTelegramBot.DapperClasses
 {
-    internal class User
+    internal class _DUser
     {
         public long Id { get; set; }
         public string UserName { get; set; }
@@ -16,11 +16,8 @@ namespace MyTelegramBot.DapperClasses
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public long Roles_id { get; set; }
-    }
 
-    internal class QueryUsers
-    {
-        public static long InsertUser(string AconnectionString, User Auser)
+        public static long InsertUser(string AconnectionString, _DUser Auser)
         {
             string sql = @"INSERT INTO public.userlist(username, user_ident, firstname, lastname)
                 VALUES (@username, @user_ident, @firstname, @lastname) RETURNING id;";
@@ -36,7 +33,7 @@ namespace MyTelegramBot.DapperClasses
             }
             return vUserId;
         }
-        public static User SelectUser(string AconnectionString, long AUser_Ident)
+        public static _DUser SelectUser(string AconnectionString, long AUser_Ident)
         {
             string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id 
                 FROM userlist WHERE user_ident = @user_ident";
@@ -44,7 +41,7 @@ namespace MyTelegramBot.DapperClasses
             using (var connection = new NpgsqlConnection(AconnectionString))
             {
                 connection.Open();
-                User vuser = connection.QueryFirstOrDefault<User>(sql, new { user_ident = AUser_Ident });
+                _DUser vuser = connection.QueryFirstOrDefault<_DUser>(sql, new { user_ident = AUser_Ident });
 
                 return vuser;
             }
