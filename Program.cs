@@ -8,6 +8,7 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using MyTelegramBot.Classes;
 
 namespace HomeWork24
 {
@@ -26,6 +27,8 @@ namespace HomeWork24
 
         public static async Task Main()
         {
+            Logger logger = new Logger("application.log");
+
             MyBot.procShowMessage = Console.WriteLine;
 
             MyAppConfig appConfig = new();
@@ -35,6 +38,8 @@ namespace HomeWork24
 
             //HandleUpdates handleUpdates = new HandleUpdates();
             HandleUpdates.Query = new pgQuery(appConfig.ConnectionString);
+            HandleUpdates.procShowMessage += Console.WriteLine;
+            HandleUpdates.procShowMessage += logger.Log;
 
             HandleUpdates.RegisterHandlesUpdates(ref telegramSession.UpdRecDelegate);
 

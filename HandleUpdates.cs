@@ -14,7 +14,7 @@ namespace MyTelegramBot
 {
     internal class HandleUpdates : CustomHandleUpdates
     {
-        static List<CustomRole> RoleList;
+        //static List<CustomRole> RoleList;
         public static bool BeginUpdate = false;
 
         public static void RegisterHandlesUpdates(ref UpdateReceivedDelegate? updRecDelegate)
@@ -26,6 +26,7 @@ namespace MyTelegramBot
 
         public static void UpdateReceivedBegin(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
+            DoConShowMessage("1");
             BeginUpdate = false;
         }
 
@@ -74,15 +75,17 @@ namespace MyTelegramBot
 
         public static void UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
+            DoConShowMessage("2");
             if (BeginUpdate) return;
 
-            void SelectRole(ITelegramBotClient botClient, Update update, CancellationToken token)
+            void SelectRole(ITelegramBotClient botClient, Update update, CancellationToken token, List<CustomRole>  ARoleList)
             {
                 var buttons = new ReplyKeyboardMarkup();
                 buttons.ResizeKeyboard = true;
 
                 var info = "Выберите доступную роль";
-                foreach (var item in RoleList)
+
+                foreach (var item in ARoleList)
                 {
                     buttons.AddButton(new KeyboardButton($"{item.Id}.{item.Name}"));
                 }
@@ -126,10 +129,10 @@ namespace MyTelegramBot
                     vuser.Roles_id = 0;
                     vUserId = Query.InsertUser(vuser);
                 }
-                if (RoleList is null)
-                    RoleList = Query.SelectRoles(vUserId);
+                //if (RoleList is null)
+                    //RoleList = Query.SelectRoles(vUserId);
 
-                SelectRole(AbotClient, Aupdate, Atoken);
+                SelectRole(AbotClient, Aupdate, Atoken, Query.SelectRoles(vUserId));
 
                 BeginUpdate = true;
                 return;
@@ -139,7 +142,9 @@ namespace MyTelegramBot
 
         public static void UpdateReceivedRole(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
-            if (BeginUpdate || (RoleList is null)) return;
+            DoConShowMessage("3");
+            if (BeginUpdate) return;
+            /*if (RoleList is null) return;
             bool HasRole()
             {
                 string[] vArrWord = Aupdate.Message.Text.Split('.', StringSplitOptions.None);
@@ -154,6 +159,18 @@ namespace MyTelegramBot
                     }
                     return false;
                 }
+                return false;*/
+
+            bool HasRole()
+            {
+                string[] vArrWord = Aupdate.Message.Text.Split('.', StringSplitOptions.None);
+                int vId = 0;
+
+                if ((vArrWord.Length > 1) && (int.TryParse(vArrWord[0], out vId)))
+                {
+                    var vuser = Query.SelectUser(Aupdate.Message.From.Id);
+                    return (Query.HasRole(vuser.Id, vId));
+                }
                 return false;
             }
 
@@ -164,7 +181,7 @@ namespace MyTelegramBot
             }
             else
             {
-                DoConShowMessage("Has");
+                DoConShowMessage("NoHas");
                 BeginUpdate = false;
             }
 
