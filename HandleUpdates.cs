@@ -15,7 +15,7 @@ namespace MyTelegramBot
     internal class HandleUpdates : CustomHandleUpdates
     {
         //static List<CustomRole> RoleList;
-        public static bool BeginUpdate = false;
+        public static bool BeginUpdate = true;
 
         public static void RegisterHandlesUpdates(ref UpdateReceivedDelegate? updRecDelegate)
         {
@@ -26,7 +26,6 @@ namespace MyTelegramBot
 
         public static void UpdateReceivedBegin(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
-            DoConShowMessage("1");
             BeginUpdate = false;
         }
 
@@ -75,42 +74,46 @@ namespace MyTelegramBot
 
         public static void UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
-            DoConShowMessage("2");
             if (BeginUpdate) return;
 
-            void SelectRole(ITelegramBotClient botClient, Update update, CancellationToken token, List<CustomRole>  ARoleList)
+            void SelectRole1(List<CustomRole>  ARoleList)
             {
-                var buttons = new ReplyKeyboardMarkup();
-                buttons.ResizeKeyboard = true;
+                var keyboard = new ReplyKeyboardMarkup();
+                keyboard.ResizeKeyboard = true;
 
                 var info = "Выберите доступную роль";
 
                 foreach (var item in ARoleList)
                 {
-                    buttons.AddButton(new KeyboardButton($"{item.Id}.{item.Name}"));
+                    //var button = new KeyboardButton($"{item.Id}.{item.Name}");// { RequestUsers = "param1=value1" };                    
+                    var button = new KeyboardButton($"{item.Id}.{item.Name}");// { RequestUsers = "param1=value1" };                    
+                    keyboard.AddButton(button);
                 }
-                botClient.SendMessage(update.Message.Chat.Id, info, replyMarkup: buttons);
 
 
-            }
+                AbotClient.SendMessage(Aupdate.Message.Chat.Id, info, replyMarkup: keyboard);
 
-            /*void SelectRole(ITelegramBotClient botClient, Update update, CancellationToken token)
+            };
+
+            
+
+            void SelectRole(List<CustomRole> ARoleList)
             {
-                var inlineKeyboard = new InlineKeyboardMarkup();
-                
-                var info = "Выберите доступную роль";
-                foreach (var item in RoleList)
+                var keyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(new[]
                 {
-                    inlineKeyboard.AddButton(new InlineKeyboardButton($"{item.Id + 1}.{item.Name}"));
-                }
-                // Отправляем сообщение с кнопками
-                botClient.SendTextMessageAsync(
-                    chatId: update.Message.Chat.Id,
-                    text: "Выберите опцию:",
-                    replyMarkup: inlineKeyboard
-                );
-
-            }*/
+                    new [] // first row
+                    {
+                        InlineKeyboardButton.WithUrl("1.1","www.google.com"),
+                        InlineKeyboardButton.WithCallbackData("1.2"),
+                    },
+                    new [] // second row
+                    {
+                        InlineKeyboardButton.WithCallbackData("2.1"),
+                        InlineKeyboardButton.WithCallbackData("2.2"),
+                    }
+                });
+                //AbotClient.SendTextMessageAsync(Aupdate.Message.Chat.Id, "Жамкни!", replyMarkup: keyboard);
+            }
 
             if (Aupdate.Message.Text == "/start")
             {
@@ -130,9 +133,12 @@ namespace MyTelegramBot
                     vUserId = Query.InsertUser(vuser);
                 }
                 //if (RoleList is null)
-                    //RoleList = Query.SelectRoles(vUserId);
+                var vRoleList = Query.SelectRoles(vUserId);
 
-                SelectRole(AbotClient, Aupdate, Atoken, Query.SelectRoles(vUserId));
+                if (vRoleList.Count > 1)
+                    SelectRole(vRoleList);
+                else
+                    DoGetMenuRole(AbotClient, Aupdate, vRoleList[0].Id);
 
                 BeginUpdate = true;
                 return;
@@ -140,9 +146,30 @@ namespace MyTelegramBot
             BeginUpdate = false;
         }
 
+        protected static void DoGetMenuRole(ITelegramBotClient AbotClient, Update Aupdate, long ARole_Id)
+        {
+            void ShowUserMenu0()
+            {
+                var buttons = new ReplyKeyboardMarkup();
+                buttons.ResizeKeyboard = true;
+
+                var info = "Выберите тему";
+
+                buttons.AddButton(new KeyboardButton($"Ресторан"));
+                buttons.AddButton(new KeyboardButton($"Тихий час"));
+                buttons.AddButton(new KeyboardButton($"Трансфер"));
+                AbotClient.SendMessage(Aupdate.Message.Chat.Id, info, replyMarkup: buttons);
+
+
+            }
+
+            if (ARole_Id == 0)
+            {
+                ShowUserMenu0();
+            }
+        }
         public static void UpdateReceivedRole(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
-            DoConShowMessage("3");
             if (BeginUpdate) return;
             /*if (RoleList is null) return;
             bool HasRole()
@@ -161,22 +188,25 @@ namespace MyTelegramBot
                 }
                 return false;*/
 
+            int ARole_Id = 0;
             bool HasRole()
             {
                 string[] vArrWord = Aupdate.Message.Text.Split('.', StringSplitOptions.None);
-                int vId = 0;
 
-                if ((vArrWord.Length > 1) && (int.TryParse(vArrWord[0], out vId)))
+                if ((vArrWord.Length > 1) && (int.TryParse(vArrWord[0], out ARole_Id)))
                 {
                     var vuser = Query.SelectUser(Aupdate.Message.From.Id);
-                    return (Query.HasRole(vuser.Id, vId));
+                    return (Query.HasRole(vuser.Id, ARole_Id));
                 }
                 return false;
             }
 
             if (HasRole())
             {
-                DoConShowMessage("info");
+                if (ARole_Id == 0)
+                {
+                    DoGetMenuRole(AbotClient, Aupdate, ARole_Id);
+                }
                 BeginUpdate = true;
             }
             else

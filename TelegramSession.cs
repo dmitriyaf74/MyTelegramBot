@@ -21,6 +21,7 @@ public class TelegramSession
         // Создаем экземпляр клиента Telegram Bot API с использованием предоставленного токена
         botClient = new TelegramBotClient(botToken);
         cts = new CancellationTokenSource();
+        //botClient.On
     }
 
     public async Task StartReceiving()
@@ -62,17 +63,17 @@ public class TelegramSession
                 /* var res =*/ UpdRecDelegate(botClient, update, cancellationToken);
                 if (!HandleUpdates.BeginUpdate)
                 {
-                    ReplyKeyboardRemove removeKeyboard = new ReplyKeyboardRemove();
-
-                    await botClient.SendTextMessageAsync(
-                            chatId: message.Chat.Id,
-                            text: $"Неизвестная команда {update.Message.Text}",
-                            cancellationToken: cancellationToken,
-                        replyMarkup: removeKeyboard);
+                    //ReplyKeyboardRemove removeKeyboard = new ReplyKeyboardRemove();
+                    //await botClient.SendTextMessageAsync(
+                    //        chatId: message.Chat.Id,
+                    //        text: $"Неизвестная команда {update.Message.Text}",
+                    //        cancellationToken: cancellationToken,
+                    //    replyMarkup: removeKeyboard);
                 }
             }
         }
     }
+
 
     private Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
     {
