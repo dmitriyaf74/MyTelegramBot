@@ -67,6 +67,71 @@ namespace MyTelegramBot.DapperClasses
 
             return items.Count > 0;
         }
+
+        public override UserParam ReadParam(long Auser_id, string AparamName)
+        {
+            string sql = @"select user_id,param_name,param_str,param_int  
+                from userparams up 
+                where up.user_id = @user_id 
+                    and up.param_name = @param_name";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                UserParam vparam = connection.QueryFirstOrDefault<UserParam>(sql, new { user_id = Auser_id, param_name = AparamName });
+
+                return vparam;
+            }
+        }
+
+        public override void WriteParam(long Auser_id, string AparamName, string Aparam_value)
+        {
+            string sql = @"INSERT INTO userparams ( user_id,param_name,param_str,param_int )
+                VALUES (@user_id, @param_name, @param_value, null)
+                ON CONFLICT (user_id,param_name)
+                DO UPDATE SET 
+                    param_str = EXCLUDED.param_str, 
+                    param_int = EXCLUDED.param_int;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                connection.QueryFirstOrDefault<UserParam>(sql, new { user_id = Auser_id, param_name = AparamName, param_value = Aparam_value });
+
+            }
+        }
+
+        public override void WriteParam(long Auser_id, string AparamName, int Aparam_value)
+        {
+            string sql = @"INSERT INTO userparams ( user_id,param_name,param_str,param_int )
+                VALUES (@user_id, @param_name, null, @param_value)
+                ON CONFLICT (user_id,param_name)
+                DO UPDATE SET 
+                    param_str = EXCLUDED.param_str, 
+                    param_int = EXCLUDED.param_int;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                connection.QueryFirstOrDefault<UserParam>(sql, new { user_id = Auser_id, param_name = AparamName, param_value = Aparam_value });
+
+            }
+        }
+
+        public override List<CustomUserTree> SelectUserTree(long AParent_Id)
+        {
+            string sql = @"select id,name,parent_id
+                from userquerys_tree ut 
+                where up.parent_id = @parent_id";
+
+            DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
+            object parameters = new { parent_id = AParent_Id };
+            List<CustomUserTree> items = dbHelper.GetList<CustomUserTree>(sql, parameters);
+
+            return items;
+        }
+
+
     }
-    
+
 }
