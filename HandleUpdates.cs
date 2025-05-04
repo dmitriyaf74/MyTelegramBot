@@ -9,6 +9,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types;
 using Telegram.Bot;
 using MyTelegramBot.Classes;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace MyTelegramBot
 {
@@ -20,100 +21,53 @@ namespace MyTelegramBot
         public static void RegisterHandlesUpdates(ref UpdateReceivedDelegate? updRecDelegate)
         {
             updRecDelegate += UpdateReceivedBegin;
+            //updRecDelegate += HandleUpdateAsyncTest;
+
             updRecDelegate += UpdateReceivedStart;
             updRecDelegate += UpdateReceivedRole;
         }
 
-        public static void UpdateReceivedBegin(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        public static void RegisterCallBackUpdates(ref UpdateReceivedDelegate? updCallBackDelegate)
+        {
+            updCallBackDelegate += UpdateReceivedBegin;
+
+            updCallBackDelegate += UpdateCallBaclHideKeyboard;
+        }
+
+        
+        public static async Task UpdateCallBaclHideKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        {
+            AbotClient.EditMessageReplyMarkupAsync(Aupdate.CallbackQuery.Message.Chat.Id, Aupdate.CallbackQuery.Message.Id);
+        }
+
+        public static async Task UpdateReceivedBegin(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             BeginUpdate = false;
         }
 
-        /*public static class TelegramKeyboardHelper
-        {
-            public static InlineKeyboardMarkup CreateKeyboard(Dictionary<string, string> buttonData)
-            {
-                // Создаем список строк кнопок
-                var keyboardRows = new List<List<InlineKeyboardButton>>();
-                var currentRow = new List<InlineKeyboardButton>();
 
-                // Проходим по словарю, где ключ - метка, значение - callbackData
-                foreach (var button in buttonData)
-                {
-                    // Создаем кнопку с меткой (text) и значением (callback_data)
-                    var inlineKeyboardButton = InlineKeyboardButton.WithCallbackData(button.Key, button.Value);
-                    currentRow.Add(inlineKeyboardButton);
-                }
-
-                // Добавляем строку кнопок в список строк
-                keyboardRows.Add(currentRow);
-
-                // Создаем объект InlineKeyboardMarkup из списка строк
-                return new InlineKeyboardMarkup(keyboardRows);
-            }
-        }
-        public static async Task SendMessageWithButtons(ITelegramBotClient botClient, long chatId)
-        {
-            // Определяем данные для кнопок. Ключ - текст на кнопке, значение - данные для callback
-            var buttonData = new Dictionary<string, string>
-    {
-        { "Кнопка 1", "value_1" },
-        { "Кнопка 2", "value_2" },
-        { "Кнопка 3", "value_3" }
-    };
-
-            // Создаем клавиатуру
-            var inlineKeyboard = TelegramKeyboardHelper.CreateKeyboard(buttonData);
-
-            // Отправляем сообщение с клавиатурой
-            await botClient.SendTextMessageAsync(
-                chatId: chatId,
-                text: "Выберите опцию:",
-                replyMarkup: inlineKeyboard);
-        }*/
-
-        public static void UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        public static async Task UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (BeginUpdate) return;
 
-            void SelectRole1(List<CustomRole>  ARoleList)
+            InlineKeyboardMarkup GetKeyBoard(List<CustomRole> ARoleList)
             {
-                var keyboard = new ReplyKeyboardMarkup();
-                keyboard.ResizeKeyboard = true;
+                var keyboard = new InlineKeyboardMarkup();
+                //keyboard.ResizeKeyboard = true;
 
                 var info = "Выберите доступную роль";
 
                 foreach (var item in ARoleList)
                 {
                     //var button = new KeyboardButton($"{item.Id}.{item.Name}");// { RequestUsers = "param1=value1" };                    
-                    var button = new KeyboardButton($"{item.Id}.{item.Name}");// { RequestUsers = "param1=value1" };                    
+                    var button = new InlineKeyboardButton($"{item.Id}.{item.Name}", "qweqwe");// { RequestUsers = "param1=value1" };                    
                     keyboard.AddButton(button);
                 }
 
 
-                AbotClient.SendMessage(Aupdate.Message.Chat.Id, info, replyMarkup: keyboard);
+                return keyboard;
 
             };
-
-            
-
-            void SelectRole(List<CustomRole> ARoleList)
-            {
-                var keyboard = new Telegram.Bot.Types.ReplyMarkups.InlineKeyboardMarkup(new[]
-                {
-                    new [] // first row
-                    {
-                        InlineKeyboardButton.WithUrl("1.1","www.google.com"),
-                        InlineKeyboardButton.WithCallbackData("1.2"),
-                    },
-                    new [] // second row
-                    {
-                        InlineKeyboardButton.WithCallbackData("2.1"),
-                        InlineKeyboardButton.WithCallbackData("2.2"),
-                    }
-                });
-                //AbotClient.SendTextMessageAsync(Aupdate.Message.Chat.Id, "Жамкни!", replyMarkup: keyboard);
-            }
 
             if (Aupdate.Message.Text == "/start")
             {
@@ -136,7 +90,10 @@ namespace MyTelegramBot
                 var vRoleList = Query.SelectRoles(vUserId);
 
                 if (vRoleList.Count > 1)
-                    SelectRole(vRoleList);
+                {
+                    //SelectRole(vRoleList);
+                    await AbotClient.SendTextMessageAsync(Aupdate.Message.Chat.Id, "Жамкни2!", replyMarkup: GetKeyBoard(vRoleList));
+                }
                 else
                     DoGetMenuRole(AbotClient, Aupdate, vRoleList[0].Id);
 
@@ -144,6 +101,7 @@ namespace MyTelegramBot
                 return;
             }
             BeginUpdate = false;
+            
         }
 
         protected static void DoGetMenuRole(ITelegramBotClient AbotClient, Update Aupdate, long ARole_Id)
@@ -168,7 +126,7 @@ namespace MyTelegramBot
                 ShowUserMenu0();
             }
         }
-        public static void UpdateReceivedRole(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        public static async Task UpdateReceivedRole(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (BeginUpdate) return;
             /*if (RoleList is null) return;
