@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 
 namespace MyTelegramBot.DapperClasses
 {
-    internal class pgQuery : CustomQuery
+    internal class pgQueryUser : CustomQuery
     {
         private string ConnectionString;
-        public pgQuery(string AconnectionString)
+        public pgQueryUser(string AconnectionString)
         {
             ConnectionString = AconnectionString;
         }
-        public override List<CustomRole> SelectRoles(long Auser_id)
+        public override List<CustomRole> SelectRoles(long? Auser_id)
         {
             string sql = @"select r.id, r.name from userroles ur join roles r on r.id = ur.role_id where ur.user_id = @user_id and ur.enabled = true";
             DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
@@ -41,7 +41,7 @@ namespace MyTelegramBot.DapperClasses
             }
             return vUserId;
         }
-        public override CustomUser SelectUser(long AUser_Ident)
+        public override CustomUser? SelectUser(long? AUser_Ident)
         {
             string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id 
                 FROM userlist WHERE user_ident = @user_ident";
@@ -49,7 +49,7 @@ namespace MyTelegramBot.DapperClasses
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                CustomUser vuser = connection.QueryFirstOrDefault<CustomUser>(sql, new { user_ident = AUser_Ident });
+                CustomUser? vuser = connection.QueryFirstOrDefault<CustomUser>(sql, new { user_ident = AUser_Ident });
 
                 return vuser;
             }
@@ -68,7 +68,7 @@ namespace MyTelegramBot.DapperClasses
             return items.Count > 0;
         }
 
-        public override UserParam ReadParam(long Auser_id, string AparamName)
+        public override UserParam? ReadParam(long Auser_id, string AparamName)
         {
             string sql = @"select user_id,param_name,param_str,param_int  
                 from userparams up 
@@ -78,7 +78,7 @@ namespace MyTelegramBot.DapperClasses
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                UserParam vparam = connection.QueryFirstOrDefault<UserParam>(sql, new { user_id = Auser_id, param_name = AparamName });
+                UserParam? vparam = connection.QueryFirstOrDefault<UserParam>(sql, new { user_id = Auser_id, param_name = AparamName });
 
                 return vparam;
             }
@@ -129,6 +129,22 @@ namespace MyTelegramBot.DapperClasses
             List<CustomUserTree> items = dbHelper.GetList<CustomUserTree>(sql, parameters);
 
             return items;
+        }
+
+
+        /*User_Messages*/
+        public override void WriteMessageToDB(long Auser_id, long Achat_id, long Aanswerer_id, string AMessageStr)
+        {
+            string sql = @"INSERT INTO user_messages ( user_id,answerer_id,chat_id,message_str,datetime )
+                VALUES (@user_id, @answerer_id, @chat_id, @message_str, datetime);";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = Auser_id, answerer_id = Aanswerer_id, chat_id = Achat_id, message_str = AMessageStr, datetime = DateTime.Now };
+                connection.QueryFirstOrDefault<UserParam>(sql, vParam);
+
+            }
         }
 
 

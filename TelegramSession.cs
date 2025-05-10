@@ -1,5 +1,5 @@
 ﻿using Microsoft.VisualBasic;
-using MyTelegramBot;
+using MyTelegramBot.HandleUpdates;
 using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Args;
@@ -9,17 +9,19 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using static Telegram.Bot.TelegramBotClient;
+using MyTelegramBot.Classes;
+using System;
 
 
-public delegate Task UpdateReceivedDelegate(ITelegramBotClient botClient, Update update, CancellationToken token);
+
 
 public class TelegramSession
 {
     private TelegramBotClient botClient;
     private CancellationTokenSource cts;
 
-    public UpdateReceivedDelegate UpdRecDelegate = null;
-    public UpdateReceivedDelegate UpdCallBackDelegate = null;
+    public UpdateReceivedDelegate? UpdRecDelegate = null;
+    public UpdateCallBackDelegate? UpdCallBackDelegate = null;
 
     //public async Task OnMessageHandler1(Message message, UpdateType type)
     public TelegramSession(string botToken)
@@ -47,12 +49,15 @@ public class TelegramSession
 
         // Запускаем получение обновлений в асинхронном режиме
 
-        botClient.StartReceiving(
-        updateHandler: HandleUpdateAsync,
-        errorHandler: HandlePollingErrorAsync,
-        receiverOptions: receiverOptions,
-        cancellationToken: cts.Token
-        );
+        await Task.Run(() =>
+        {
+            botClient.StartReceiving(
+                updateHandler: HandleUpdateAsync,
+                errorHandler: HandlePollingErrorAsync,
+                receiverOptions: receiverOptions,
+                cancellationToken: cts.Token
+                );
+        });
 
         Console.WriteLine($"Бот запущен и готов к работе.");
     }
@@ -77,10 +82,14 @@ public class TelegramSession
         {
             //var data = callbackQuery.Data;
 
-            Console.WriteLine($"Получено сообщение: {callbackQuery.Data}-{callbackQuery.Message.Text} от {callbackQuery.Message.Chat.Id}");
+            Console.WriteLine($"Получено сообщение: {callbackQuery.Data}-{callbackQuery?.Message?.Text} от {callbackQuery?.Message?.Chat.Id}");
             if (UpdCallBackDelegate != null)
             {
-                UpdCallBackDelegate(botClient, update, cancellationToken);
+                foreach (UpdateCallBackDelegate del in UpdCallBackDelegate.GetInvocationList())
+                {
+                    if (!del(botClient, update, cancellationToken))
+                        break; 
+                }
             }            
         }
         else
@@ -95,8 +104,8 @@ public class TelegramSession
 
             if (UpdRecDelegate != null) // Важно проверить, что делегат не равен null, иначе будет исключение.
             {
-                /* var res =*/ UpdRecDelegate(botClient, update, cancellationToken);
-                if (!HandleUpdates.BeginUpdate)
+                await UpdRecDelegate(botClient, update, cancellationToken);
+                //if (!HandleUpdatesUser.BeginUpdate)
                 {
                     //ReplyKeyboardRemove removeKeyboard = new ReplyKeyboardRemove();
                     //await botClient.SendTextMessageAsync(
@@ -124,10 +133,10 @@ public class TelegramSession
         return Task.CompletedTask;
     }
 
-    public void StopReceiving()
+    public async Task StopReceiving()
     {
         // Останавливаем получение обновлений
-        cts.CancelAsync();
+        await cts.CancelAsync();
         Console.WriteLine("Бот остановлен.");
     }
 }
