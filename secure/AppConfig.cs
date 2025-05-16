@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using System.Runtime.InteropServices;
 
 namespace MyTelegramBot.secure
 {
@@ -25,6 +26,9 @@ namespace MyTelegramBot.secure
             if (!File.Exists(vConfigFilePath + vConfigFileName))
             {
                 vConfigFilePath = vConfigFilePath + "..\\..\\..\\";
+                bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+                char correctSeparator = isWindows ? '\\' : '/';
+                vConfigFilePath = vConfigFilePath.Replace('\\', correctSeparator).Replace('/', correctSeparator);
                 if (!File.Exists(vConfigFilePath + vConfigFileName))
                 {
                     WriteDefaultConfig(vConfigFilePath + vConfigFileName);
