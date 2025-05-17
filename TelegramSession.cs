@@ -41,8 +41,8 @@ public class TelegramSession
         // Настраиваем параметры получения обновлений
         var receiverOptions = new ReceiverOptions()
         {
-            AllowedUpdates = { }, // Получать все типы обновлений
-            //AllowedUpdates = [UpdateType.Message]
+            //AllowedUpdates = { }, // Получать все типы обновлений
+            AllowedUpdates = [UpdateType.Message, UpdateType.CallbackQuery]
             //ThrowPendingUpdates = true // Сбрасывать необработанные обновления при запуске
         };
         //botClient.OnMessage += this.HandleMessageAsync1;

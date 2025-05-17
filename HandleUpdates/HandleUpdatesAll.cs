@@ -16,16 +16,12 @@ namespace MyTelegramBot.HandleUpdates
     {
         public override void RegisterHandlesUpdates(ref UpdateReceivedDelegate? updRecDelegate)
         {
-            //updRecDelegate += UpdateReceivedBegin;
-            //updRecDelegate += HandleUpdateAsyncTest;
-
             updRecDelegate += UpdateReceivedStart;
             //updRecDelegate += UpdateReceivedRole;
         }
 
         public override void RegisterCallBackUpdates(ref UpdateCallBackDelegate? updCallBackDelegate)
         {
-            //updCallBackDelegate += UpdateReceivedBegin;
 
             updCallBackDelegate += UpdateCallBaclHideKeyboard;
         }
