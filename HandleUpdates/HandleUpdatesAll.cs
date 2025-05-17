@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using Telegram.Bot.Types.Enums;
 
 namespace MyTelegramBot.HandleUpdates
 {
@@ -43,7 +44,8 @@ namespace MyTelegramBot.HandleUpdates
 
         public override void RegisterCallBackUpdates(ref UpdateCallBackDelegate? updCallBackDelegate)
         {
-            updCallBackDelegate += UpdateCallBaclUserKeyboard;
+            updCallBackDelegate += UpdateCallBackUserKeyboard;
+            updCallBackDelegate += UpdateCallBackAdminKeyboard;
         }
 
         private bool UserQuerysExists(int ALevel)
@@ -265,7 +267,7 @@ namespace MyTelegramBot.HandleUpdates
 
         }*/
 
-        public async Task UpdateCallBaclUserKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        public async Task UpdateCallBackUserKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.CallbackQuery?.Message is not null)
             {
@@ -301,7 +303,6 @@ namespace MyTelegramBot.HandleUpdates
                             }
                             break;
                         default:
-                            DoConShowMessage($"Некорректная кнопка");
                             break;
                     }
                 }
@@ -309,7 +310,17 @@ namespace MyTelegramBot.HandleUpdates
             }
         }
 
-        public async Task UpdateCallBaclAdminKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        //static string GenerateHtmlTable()
+        //{
+        //    //Формируем HTML-код таблицы
+        //    string html = "<table>" +
+        //                  "<tr><th>Заголовок 1</th><th>Заголовок 2</th></tr>" +
+        //                  "<tr><td>Ячейка 1</td><td>Ячейка 2</td></tr>" +
+        //                  "<tr><td>Ячейка 3</td><td>Ячейка 4</td></tr>" +
+        //                  "</table>";
+        //    return html;
+        //}
+        public async Task UpdateCallBackAdminKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.CallbackQuery?.Message is not null)
             {
@@ -323,19 +334,23 @@ namespace MyTelegramBot.HandleUpdates
                             switch (int.Parse(strs[1]))
                             { 
                                 case (int)AdminButtons._ShowNewUsers:
-                                    await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id,
-                                        $"Тут будет таблица с новыми пользователями!");
+                                    await AbotClient.SendMessage(
+                                        chatId: Aupdate.CallbackQuery.Message.Chat.Id,
+                                        //text: $"Тут будет таблица с новыми пользователями!\n{GenerateHtmlTable()}",
+                                        text: $"Тут будет таблица с новыми пользователями!",
+                                        parseMode: ParseMode.Html);
                                     break;
                                 case (int)AdminButtons._ShowInfo:
-                                    await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, 
-                                        $"Привет!");
+                                    await AbotClient.SendMessage(
+                                        chatId: Aupdate.CallbackQuery.Message.Chat.Id,
+                                        text: $"Привет!",
+                                        parseMode: ParseMode.Html);
                                     break;
                                 default:
                                     break;
                             }
                             break;
                         default:
-                            DoConShowMessage($"Некорректная кнопка");
                             break;
                     }
                 }
