@@ -100,10 +100,7 @@ internal class TelegramSession
             if (UpdCallBackDelegate != null)
             {
                 foreach (UpdateCallBackDelegate del in UpdCallBackDelegate.GetInvocationList())
-                {
-                    if (!del(botClient, update, cancellationToken))
-                        break; 
-                }
+                    await del(botClient, update, cancellationToken);
             }            
         }
         else

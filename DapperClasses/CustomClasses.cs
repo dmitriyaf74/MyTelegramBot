@@ -21,6 +21,7 @@
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public long Roles_id { get; set; }
+        public string? UserQueryTreeId { get; set; }
 
     }
 
@@ -48,16 +49,15 @@
     internal class UserMessages
     {
         public long User_Id { get; set; }
-        public long Answerer_Id { get; set; }
-        public long Chat_Id { get; set; }
         public string? MessageStr { get; set; }
         public DateTime Date_Time { get; set; }
+        public bool Delivered { get; set; }
     }
     internal class UserQuerysTree
     {
         public long Id { get; set; }
         public string? Name { get; set; }
-        public string? Parent_Id { get; set; }        
+        public long? Parent_Id { get; set; }        
 
     }
 

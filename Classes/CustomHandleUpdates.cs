@@ -12,7 +12,7 @@ namespace MyTelegramBot.Classes
     public delegate void ProcShowMessage(string message);
     public delegate void ProcShowError(string message);
     public delegate Task UpdateReceivedDelegate(ITelegramBotClient botClient, Update update, CancellationToken token);
-    public delegate bool UpdateCallBackDelegate(ITelegramBotClient botClient, Update update, CancellationToken token);
+    public delegate Task UpdateCallBackDelegate(ITelegramBotClient botClient, Update update, CancellationToken token);
 
     internal class CustomHandleUpdates
     {
