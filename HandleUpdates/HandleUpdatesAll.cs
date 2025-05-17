@@ -19,7 +19,14 @@ namespace MyTelegramBot.HandleUpdates
         private const string _userkeybord = "userkeybord";
         private const string _userquerysbord = "userquerysbord";
 
-        private List<UserQuerysTree>? QuerysTreeList = null;
+        private const string _adminkeybord = "adminkeybord";
+        public enum AdminButtons
+        {
+            _ShowNewUsers,
+            _ShowInfo,
+        }
+
+        private List<UserQueriesTree>? QuerysTreeList = null;
 
         public TelegramSession BotSession;
         public HandleUpdatesAll(TelegramSession ABotSession)
@@ -36,7 +43,7 @@ namespace MyTelegramBot.HandleUpdates
 
         public override void RegisterCallBackUpdates(ref UpdateCallBackDelegate? updCallBackDelegate)
         {
-            updCallBackDelegate += UpdateCallBaclHideKeyboard;
+            updCallBackDelegate += UpdateCallBaclUserKeyboard;
         }
 
         private bool UserQuerysExists(int ALevel)
@@ -56,7 +63,7 @@ namespace MyTelegramBot.HandleUpdates
                 return filtered[0].Name ?? "";
             return "";
         }
-        public async Task ShowUserQuerys(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
+        public async Task ShowUserQueries(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
         {
             if (!UserQuerysExists(ALevel))
                 return;
@@ -74,15 +81,32 @@ namespace MyTelegramBot.HandleUpdates
                 await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Выберите раздел:", replyMarkup:
                                       GetKeyBoard(keyboardList, _userquerysbord));
         }
+
+        public async Task ShowAdminQueries(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
+        {
+            Dictionary<int, string> keyboardList = new();
+            keyboardList.Add((int)AdminButtons._ShowNewUsers, "10 новых пользователей");
+            keyboardList.Add((int)AdminButtons._ShowInfo, "Другая информация");
+
+            if (Aupdate?.Message is not null)
+                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Выберите раздел:", replyMarkup:
+                                      GetKeyBoard(keyboardList, _adminkeybord));
+            else
+            if (Aupdate?.CallbackQuery?.Message is not null)
+                await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Выберите раздел:", replyMarkup:
+                                      GetKeyBoard(keyboardList, _adminkeybord));
+        }
+
         public async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, long? ARole_Id)
         {
             DoConShowMessage($"{ARole_Id}");
             switch (ARole_Id)
             {
                 case 0: //User
-                    await ShowUserQuerys(AbotClient, Aupdate, 0);
+                    await ShowUserQueries(AbotClient, Aupdate, 0);
                     break; 
                 case 1: //Admin
+                    await ShowAdminQueries(AbotClient, Aupdate, 0);
                     break;
                 case 2: //Boss
                     break;
@@ -172,7 +196,8 @@ namespace MyTelegramBot.HandleUpdates
                             }
                             else
                             {
-                                vuser.Roles_id = 0;
+                                if (vuser is not null)
+                                    vuser.Roles_id = 0;
                                 UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, vuser?.Roles_id);
                                 await DoGetMenuRole(AbotClient, Aupdate, vuser?.Roles_id);
                             }
@@ -240,7 +265,7 @@ namespace MyTelegramBot.HandleUpdates
 
         }*/
 
-        public async Task UpdateCallBaclHideKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        public async Task UpdateCallBaclUserKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.CallbackQuery?.Message is not null)
             {
@@ -265,7 +290,7 @@ namespace MyTelegramBot.HandleUpdates
                             if (UserQuerysExists(vLevel))
                             {
                                 await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваш раздел {GetQuerysTreeName(vLevel)}");
-                                await ShowUserQuerys(AbotClient, Aupdate, vLevel);
+                                await ShowUserQueries(AbotClient, Aupdate, vLevel);
                             }
                             else
                             {
@@ -284,6 +309,39 @@ namespace MyTelegramBot.HandleUpdates
             }
         }
 
+        public async Task UpdateCallBaclAdminKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        {
+            if (Aupdate?.CallbackQuery?.Message is not null)
+            {
+                var strs = Aupdate.CallbackQuery.Data?.Split('.');
+                if ((strs?.Length > 1) && (BotSession is not null))
+                {
+                    switch (strs[0])
+                    {
+                        case _adminkeybord:
+                            HideKeyboard(AbotClient, Aupdate);
+                            switch (int.Parse(strs[1]))
+                            { 
+                                case (int)AdminButtons._ShowNewUsers:
+                                    await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id,
+                                        $"Тут будет таблица с новыми пользователями!");
+                                    break;
+                                case (int)AdminButtons._ShowInfo:
+                                    await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, 
+                                        $"Привет!");
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+                        default:
+                            DoConShowMessage($"Некорректная кнопка");
+                            break;
+                    }
+                }
+
+            }
+        }
 
     }
 }

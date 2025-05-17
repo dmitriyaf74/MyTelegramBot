@@ -53,7 +53,7 @@
         public DateTime Date_Time { get; set; }
         public bool Delivered { get; set; }
     }
-    internal class UserQuerysTree
+    internal class UserQueriesTree
     {
         public long Id { get; set; }
         public string? Name { get; set; }

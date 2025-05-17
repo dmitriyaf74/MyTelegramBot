@@ -175,11 +175,11 @@ namespace MyTelegramBot.DapperClasses
         #endregion Roles
 
         #region UserQuery
-        public List<UserQuerysTree> GetUserQuerysTree()
+        public List<UserQueriesTree> GetUserQuerysTree()
         {
-            string sql = @"select q.id, q.name, q.parent_id from userquerys_tree q";
+            string sql = @"select q.id, q.name, q.parent_id from userqueries_tree q";
             DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
-            return dbHelper.GetList<UserQuerysTree>(sql);
+            return dbHelper.GetList<UserQueriesTree>(sql);
         }
 
         public void AddMessage(long? Auser_id, string? AMessageStr)
