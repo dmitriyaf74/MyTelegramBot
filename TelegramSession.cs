@@ -23,6 +23,7 @@ internal class TelegramSession
 
     public UpdateReceivedDelegate? UpdRecDelegate = null;
     public UpdateCallBackDelegate? UpdCallBackDelegate = null;
+    public DoGetMenuRoleDelegate? DoGetMenuRole = null;
 
 
     static pgQueryUser? QueryUser { get; set; }
@@ -67,7 +68,11 @@ internal class TelegramSession
         InitRoleList();
     }
 
-
+    public async Task DoGetMenuRolesDelegates(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
+    {
+        if (DoGetMenuRole != null)
+            await DoGetMenuRole(AbotClient, Aupdate, ARole_Id);
+    }
     public async Task StartReceiving()
     {
         // Настраиваем параметры получения обновлений
@@ -133,4 +138,25 @@ internal class TelegramSession
         await cts.CancelAsync();
         DoConShowMessage("Бот остановлен.");
     }
+
+    //private async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
+    //{
+    //    DoConShowMessage($"{ARole_Id}");
+    //    switch (ARole_Id)
+    //    {
+    //        case RolesEnum.reUser:
+    //            await ShowUserButtons(AbotClient, Aupdate, 0);
+    //            break;
+    //        case RolesEnum.reAdmin:
+    //            await ShowAdminButtons(AbotClient, Aupdate, 0);
+    //            break;
+    //        case RolesEnum.reOperator:
+    //            await ShowOperatorButtons(AbotClient, Aupdate, 0);
+    //            break;
+    //        default:
+    //            DoConShowMessage($"Некорректная роль {ARole_Id}");
+    //            break;
+    //    }
+    //}
+
 }

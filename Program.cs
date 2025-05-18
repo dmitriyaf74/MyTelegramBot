@@ -24,10 +24,15 @@ namespace HomeWork24
                 HandleUpdates.procShowError += Console.WriteLine;
                 HandleUpdates.procShowMessage += logger.Log;
 
-                HandleUpdates.RegisterHandlesUpdates(ref telegramSession.UpdRecDelegate);
-                HandleUpdates.RegisterCallBackUpdates(ref telegramSession.UpdCallBackDelegate);
+                HandleUpdates.RegisterHandlesAll(ref telegramSession.UpdRecDelegate,
+                    ref telegramSession.UpdCallBackDelegate, ref telegramSession.DoGetMenuRole);
             });
         }
+
+        public static HandleUpdatesMain? gHandleUpdatesAll;
+        public static HandleUpdatesAdmin? gHandleUpdatesAdmin;
+        public static HandleUpdatesOperator? gHandleUpdatesOperator;
+        public static HandleUpdatesUser? gHandleUpdatesUser;
         public static async Task Main()
         {
             Logger logger = new Logger("application.log");
@@ -42,21 +47,22 @@ namespace HomeWork24
             telegramSession.procShowMessage += logger.Log;
 
 
-        //await RegHandleUpdates(new HandleUpdatesUser(), pgUseer, logger, telegramSession);
-        var vHandleUpdatesAll = new HandleUpdatesAll(telegramSession);
-            vHandleUpdatesAll.UserQuery = pgUseer;
-            await RegHandleUpdates(vHandleUpdatesAll, logger, telegramSession);
+            gHandleUpdatesAll = new(ABotSession: telegramSession, AUserQuery: pgUseer);
+            await RegHandleUpdates(gHandleUpdatesAll, logger, telegramSession);
+
+            gHandleUpdatesAdmin = new(telegramSession, gHandleUpdatesAll, pgUseer);
+            await RegHandleUpdates(gHandleUpdatesAdmin, logger, telegramSession);
+
+            gHandleUpdatesOperator = new(telegramSession, gHandleUpdatesAll, pgUseer);
+            await RegHandleUpdates(gHandleUpdatesOperator, logger, telegramSession);
+
+            gHandleUpdatesUser = new(telegramSession, gHandleUpdatesAll, pgUseer);
+            await RegHandleUpdates(gHandleUpdatesUser, logger, telegramSession);
 
 
             await telegramSession.StartReceiving();
             Console.ReadLine();
             await telegramSession.StopReceiving();
-
-
-            //MyBot.ConnectionString = appConfig.ConnectionString;
-            //MyBot.Query = new pgQuery();
-            //await MyBot.RunBot(appConfig.TelegramApiKey);
-
         }
 
     }
