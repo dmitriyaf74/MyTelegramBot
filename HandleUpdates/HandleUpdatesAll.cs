@@ -12,6 +12,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.Enums;
+using System.Runtime.CompilerServices;
 
 namespace MyTelegramBot.HandleUpdates
 {
@@ -21,13 +22,22 @@ namespace MyTelegramBot.HandleUpdates
         private const string _userquerysbord = "userquerysbord";
 
         private const string _adminkeybord = "adminkeybord";
-        public enum AdminButtons
+        private enum AdminButtons
         {
             _ShowNewUsers,
             _ShowInfo,
         }
+        private enum OperatorButtons
+        {
+            _QueryOldestMessage,
+            _Queryestimation,
+        }
 
-        private List<UserQueriesTree>? QuerysTreeList = null;
+        const string cstrGetOldestMessage = "/Получить обращение";
+        const string cstrGetEstimation = "/Оценить оператора";
+        const string cstrGetCloseDialog = "/Завершить диалог";
+
+        private List<UserTopics>? TopicList = null;
 
         public TelegramSession BotSession;
         public HandleUpdatesAll(TelegramSession ABotSession)
@@ -40,40 +50,45 @@ namespace MyTelegramBot.HandleUpdates
         public override void RegisterHandlesUpdates(ref UpdateReceivedDelegate? updRecDelegate)
         {
             updRecDelegate += UpdateReceivedStart;
+            updRecDelegate += UpdateReceivedOperator;
         }
 
         public override void RegisterCallBackUpdates(ref UpdateCallBackDelegate? updCallBackDelegate)
         {
             updCallBackDelegate += UpdateCallBackUserKeyboard;
             updCallBackDelegate += UpdateCallBackAdminKeyboard;
+            updCallBackDelegate += UpdateCallBackOperatorKeyboard;
         }
 
+        private List<UserTopics>? GetTopicList()
+        {
+            if (TopicList is null)
+                TopicList = UserQuery?.GetTopics();
+            return TopicList;
+        }
         private bool UserQuerysExists(int ALevel)
         {
-            if (QuerysTreeList is null)
-                QuerysTreeList = UserQuery?.GetUserQuerysTree();
-            var filtered = QuerysTreeList?.Where(p => p.Parent_Id == ALevel).ToList();
+            var filtered = GetTopicList()?.Where(p => p.Parent_Id == ALevel).ToList();
             return filtered?.Count > 0;
         }
 
-        private string GetQuerysTreeName(int AId)
+        private string GetTopicName(int AId)
         {
-            if (QuerysTreeList is null)
-                QuerysTreeList = UserQuery?.GetUserQuerysTree();
-            var filtered = QuerysTreeList?.Where(p => p.Id == AId).ToList();
+            var filtered = GetTopicList()?.Where(p => p.Id == AId).ToList();
             if (filtered?.Count > 0) 
                 return filtered[0].Name ?? "";
             return "";
         }
-        public async Task ShowUserQueries(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
+        private async Task ShowUserButtons(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
         {
             if (!UserQuerysExists(ALevel))
                 return;
             Dictionary<int, string> keyboardList = new();
-            if (QuerysTreeList != null)
-                foreach (var r in QuerysTreeList)
+            GetTopicList();
+            if (TopicList is not null)
+                foreach (var r in TopicList)
                     if (r.Parent_Id == ALevel)
-                      keyboardList.Add((int)r.Id, r?.Name ?? "");
+                        keyboardList.Add((int)r.Id, r?.Name ?? "");
 
             if (Aupdate?.Message is not null)
               await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Выберите раздел:", replyMarkup:
@@ -84,38 +99,61 @@ namespace MyTelegramBot.HandleUpdates
                                       GetKeyBoard(keyboardList, _userquerysbord));
         }
 
-        public async Task ShowAdminQueries(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
+        private async Task ShowAdminButtons(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
         {
+            const string cSelectReport = "Выберите отчет:";
+
             Dictionary<int, string> keyboardList = new();
             keyboardList.Add((int)AdminButtons._ShowNewUsers, "10 новых пользователей");
             keyboardList.Add((int)AdminButtons._ShowInfo, "Другая информация");
 
+            long? vChatId = null;
             if (Aupdate?.Message is not null)
-                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Выберите раздел:", replyMarkup:
-                                      GetKeyBoard(keyboardList, _adminkeybord));
+                vChatId = Aupdate?.Message?.Chat?.Id;
             else
-            if (Aupdate?.CallbackQuery?.Message is not null)
-                await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Выберите раздел:", replyMarkup:
-                                      GetKeyBoard(keyboardList, _adminkeybord));
+                vChatId = Aupdate?.CallbackQuery?.Message?.Chat?.Id;
+
+            if (vChatId != null)
+                await AbotClient.SendMessage(vChatId, cSelectReport, replyMarkup:
+                                  GetKeyBoard(keyboardList, _adminkeybord));
         }
 
-        public async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, long? ARole_Id)
+        private async Task ShowOperatorButtons(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
+        {
+            var keyboard = new ReplyKeyboardMarkup();
+            keyboard.ResizeKeyboard = true;
+
+            var info = "Выберите доступную роль";
+
+            keyboard.AddButton(new KeyboardButton(cstrGetOldestMessage));
+            keyboard.AddButton(new KeyboardButton(cstrGetEstimation));
+            keyboard.AddButton(new KeyboardButton(cstrGetCloseDialog));
+
+
+            long? vChatId = null;
+            if (Aupdate?.Message is not null)
+                vChatId = Aupdate?.Message?.Chat?.Id;
+            else
+                vChatId = Aupdate?.CallbackQuery?.Message?.Chat?.Id;
+
+            if (vChatId != null)
+                await AbotClient.SendMessage(vChatId, info, replyMarkup: keyboard);
+        }
+
+        private async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
         {
             DoConShowMessage($"{ARole_Id}");
             switch (ARole_Id)
             {
-                case 0: //User
-                    await ShowUserQueries(AbotClient, Aupdate, 0);
+                case RolesEnum.reUser: 
+                    await ShowUserButtons(AbotClient, Aupdate, 0);
                     break; 
-                case 1: //Admin
-                    await ShowAdminQueries(AbotClient, Aupdate, 0);
+                case RolesEnum.reAdmin: 
+                    await ShowAdminButtons(AbotClient, Aupdate, 0);
                     break;
-                case 2: //Boss
+                case RolesEnum.reOperator:
+                    await ShowOperatorButtons(AbotClient, Aupdate, 0);
                     break;
-                case 3: //Operator
-                    break;
-                case 4: //Developer
-                    break;                                    
                 default:
                     DoConShowMessage($"Некорректная роль {ARole_Id}");
                     break;
@@ -136,10 +174,21 @@ namespace MyTelegramBot.HandleUpdates
             return new InlineKeyboardMarkup(keyboardRows);
         }
 
-        private void HideKeyboard(ITelegramBotClient AbotClient, Update? Aupdate)
+        private async Task HideInlineKeyboard(ITelegramBotClient AbotClient, Update? Aupdate)
         {
             #pragma warning disable CS8602
-            AbotClient.EditMessageReplyMarkup(Aupdate.CallbackQuery.Message.Chat.Id, Aupdate.CallbackQuery.Message.Id);
+            await AbotClient.EditMessageReplyMarkup(Aupdate.CallbackQuery.Message.Chat.Id, Aupdate.CallbackQuery.Message.Id);
+            #pragma warning restore CS8602
+        }
+
+        private async Task HideKeyboard(ITelegramBotClient AbotClient, Update? Aupdate)
+        {
+            ReplyKeyboardRemove replyKeyboardRemove = new();
+            #pragma warning disable CS8602
+            await AbotClient.SendMessage(
+                chatId: Aupdate.Message.Chat.Id,
+                text: "Клавиатура скрыта.",
+                replyMarkup: replyKeyboardRemove);
             #pragma warning restore CS8602
         }
 
@@ -147,16 +196,49 @@ namespace MyTelegramBot.HandleUpdates
         {
             var vRoleList = UserQuery?.SelectRoles(AUserId);
             Dictionary<int, string> keyboardList = new();
-            if (vRoleList != null) 
-              foreach (var r in vRoleList)
-                  keyboardList.Add((int)r.Id, r?.Name ?? "");
+            if (vRoleList != null)
+            {
+                if (vRoleList.Count > 0)
+                    foreach (var r in vRoleList)
+                        keyboardList.Add((int)r.Id, r?.Name ?? "");
+            }
             return keyboardList;
         }
 
-        public async Task UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        private CustomUser? GetUser(Update? Aupdate)
+        {
+            var vuser = UserQuery?.SelectUserByIdent(Aupdate?.Message?.From?.Id);
+            if ((vuser == null) && (Aupdate?.Message?.From is not null))
+            {
+                vuser = new CustomUser();
+                vuser.UserName = Aupdate.Message.From.Username ?? "";
+                vuser.User_Ident = Aupdate.Message.From.Id;
+                vuser.FirstName = Aupdate.Message.From.FirstName ?? "";
+                vuser.LastName = Aupdate.Message.From.LastName ?? "";
+                vuser.Roles_id = RolesEnum.reUnknown;
+                vuser.Topic_id = 0;
+                vuser.Id = UserQuery?.InsertUser(vuser);
+            }
+            else
+            if (Aupdate?.Message?.Text == "/start")
+                UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, RolesEnum.reUnknown);
+            return vuser;
+        }
+
+        /// <summary>
+        /// Simple Commands
+        /// </summary>
+        /// <param name="AbotClient"></param>
+        /// <param name="Aupdate"></param>
+        /// <param name="Atoken"></param>
+        /// <returns></returns>
+        private async Task UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.Message?.Text == string.Empty || Aupdate?.Message?.Text?[0] == '\0')
                 return;
+            var vuser = GetUser(Aupdate);
+            if (vuser?.Roles_id == RolesEnum.reUnknown)
+                vuser.Roles_id = RolesEnum.reUser;
 
             if (Aupdate?.Message?.Text?[0] == '/')
             {
@@ -164,50 +246,101 @@ namespace MyTelegramBot.HandleUpdates
                 {
                     case "/start":
                     {
-                        if (Aupdate.Message.Text == "/start")
-                        {
-                            if (Aupdate.Message.From is null)
-                                return;
+                        if (Aupdate.Message.From is null)
+                            return;
 
-                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Здравствуйте {Aupdate?.Message?.From?.FirstName}");
+                        await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Здравствуйте {Aupdate?.Message?.From?.FirstName}");
 
-                            var info = $"{Aupdate?.Message?.From?.Username}({Aupdate?.Message?.From?.Id})" +
-                                    $"({Aupdate?.Message?.From?.FirstName} {Aupdate?.Message?.From?.LastName}) : {Aupdate?.Message?.Text}";
-                            DoConShowMessage(info);
+                        var info = $"{Aupdate?.Message?.From?.Username}({Aupdate?.Message?.From?.Id})" +
+                                $"({Aupdate?.Message?.From?.FirstName} {Aupdate?.Message?.From?.LastName}) : {Aupdate?.Message?.Text}";
+                        DoConShowMessage(info);
                                                             
-                            var vuser = UserQuery?.SelectUser(Aupdate?.Message.From.Id); 
-                            long? vUserId = vuser?.Id;
-                            if ((vuser == null) && (Aupdate?.Message?.From is not null))
-                            {
-                                vuser = new CustomUser();
-                                vuser.UserName = Aupdate.Message.From.Username ?? "";
-                                vuser.User_Ident = Aupdate.Message.From.Id;
-                                vuser.FirstName = Aupdate.Message.From.FirstName ?? "";
-                                vuser.LastName = Aupdate.Message.From.LastName ?? "";
-                                vuser.Roles_id = -1;
-                                vUserId = UserQuery?.InsertUser(vuser);
-                            }
-                            else
-                                UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, -1);
-
-                            var keyboardList = GetRoleKeyboardList(vUserId);
-                            if ((keyboardList?.Count > 1) && (Aupdate?.Message?.Chat is not null))
-                            {
-                                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Выберите роль:", replyMarkup:
-                                    GetKeyBoard(keyboardList, _userkeybord));
-                            }
-                            else
-                            {
-                                if (vuser is not null)
-                                    vuser.Roles_id = 0;
-                                UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, vuser?.Roles_id);
-                                await DoGetMenuRole(AbotClient, Aupdate, vuser?.Roles_id);
-                            }
-
+                        var keyboardList = GetRoleKeyboardList(vuser?.Id);
+                        if ((keyboardList?.Count > 1) && (Aupdate?.Message?.Chat is not null))
+                        {
+                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Выберите роль:", replyMarkup:
+                                GetKeyBoard(keyboardList, _userkeybord));
+                        }
+                        else
+                        {
+                            if (vuser is not null)
+                                vuser.Roles_id = RolesEnum.reUser;
+                            UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, vuser?.Roles_id);
+                            await DoGetMenuRole(AbotClient, Aupdate, vuser?.Roles_id);
                         }
                         break;
                     }
                     case "/hide":
+                        await HideKeyboard(AbotClient, Aupdate);
+                        break;
+                    default:
+                        break;
+
+                }
+            } 
+            else
+            {
+                if (vuser?.Roles_id != RolesEnum.reUser)
+                    return;
+                UserQuery?.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id);
+                UserQuery?.SetUserChatId(vuser?.User_Ident, Aupdate?.Message?.Chat.Id);
+                DoConShowMessage($"Оператор ответит вам в ближайшее время");
+            }
+
+
+        }
+
+        private async Task UpdateReceivedOperator(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        {
+            if (Aupdate?.Message?.Text == string.Empty || Aupdate?.Message?.Text?[0] == '\0')
+                return;
+            var vuser = GetUser(Aupdate);
+
+            if (Aupdate?.Message?.Text?[0] == '/')
+            {
+                switch (Aupdate.Message.Text)
+                {
+                    /*
+                                запросить старый запрос, получить пользователя и выдать всю переписку с ним, отмечая вопрос-ответ
+                                запросить у пользователя оценку работы оператора
+                                отправлять сообщение пользователю в чат и сохранять в БД
+                                код чата прописывать при старте и в момент отправки сообщения
+
+                                 */
+                    case cstrGetOldestMessage:
+                        {
+                            if (Aupdate.Message.From is null)
+                                return;
+
+                            
+                            var vMessageUserId = UserQuery?.GetOldestMessageUserId();
+                            var vUserMessages = UserQuery?.GetUserMessages(vMessageUserId);
+                            if (vUserMessages?.Count > 0)
+                            {
+                                var vMessage = "";
+                                var IsNewStr = "";
+                                var vUser = UserQuery?.SelectUserById(vUserMessages[0].User_Id);
+                                foreach (var item in vUserMessages)
+                                {
+                                    var vAnswerer = UserQuery?.SelectUserById(vUserMessages[0].Answerer_Id);
+                                    if (item.IsNew)
+                                        IsNewStr = "Новое\n";
+                                    else
+                                        IsNewStr = "";
+                                    if (vAnswerer != null)
+                                        vMessage = $"{IsNewStr}{item.Date_Time} Пользователь: {vAnswerer.UserName} \n{item.MessageStr}";
+                                    else
+                                        vMessage = $"{IsNewStr}{item.Date_Time} Оператор: {vUser?.UserName} \n{item.MessageStr}";
+                                    await AbotClient.SendMessage(Aupdate.Message.Chat.Id, vMessage);
+                                }
+                            }
+                            else
+                                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Нет непрочитанных сообщений");
+                            break;
+                        }
+                    case cstrGetEstimation:
+                        break;
+                    case cstrGetCloseDialog:
                         {
                             ReplyKeyboardRemove replyKeyboardRemove = new();
 
@@ -221,53 +354,25 @@ namespace MyTelegramBot.HandleUpdates
                         break;
 
                 }
-            } 
+            }
             else
             {
-                var vuser = UserQuery?.SelectUser(Aupdate?.Message?.From?.Id);
-                UserQuery?.AddMessage(vuser?.Id, Aupdate?.Message?.Text);
-                DoConShowMessage($"Привет");
-                /*
-                 * Проверить права
-                 * для нового пользователя установить роль
-                 * ограничить 10 новыми сообщениями
-                 */
+                if (vuser?.Roles_id != RolesEnum.reOperator)
+                    return;
+                //UserQuery?.AddOperatorMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id);
+                DoConShowMessage($"Оператор");
             }
-
 
         }
 
-        /*public async Task UpdateReceivedRole(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
-        {
-            //if (BeginUpdate) return;
-            int ARole_Id = 0;
-            bool HasRole()
-            {
-                string[]? vArrWord = Aupdate?.Message?.Text?.Split('.', StringSplitOptions.None);
-
-                if (vArrWord?.Length > 1 && int.TryParse(vArrWord[0], out ARole_Id))
-                {
-                    var vuser = Query?.SelectUser(Aupdate.Message.From.Id);
-                    return Query.HasRole(vuser.Id, ARole_Id);
-                }
-                return false;
-            }
-
-            if (HasRole())
-            {
-                if (ARole_Id == 0)
-                {
-                    DoGetMenuRole(AbotClient, Aupdate, ARole_Id);
-                }
-            }
-            else
-            {
-                DoConShowMessage("NoHas");
-            }
-
-        }*/
-
-        public async Task UpdateCallBackUserKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        /// <summary>
+        /// User Buttons
+        /// </summary>
+        /// <param name="AbotClient"></param>
+        /// <param name="Aupdate"></param>
+        /// <param name="Atoken"></param>
+        /// <returns></returns>
+        private async Task UpdateCallBackUserKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.CallbackQuery?.Message is not null)
             {
@@ -281,27 +386,29 @@ namespace MyTelegramBot.HandleUpdates
                             var vRoleName = BotSession?.Roles?[vRoleId] ?? "";
                             if (vRoleName != string.Empty)
                                 await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваша роль {vRoleName}");
-                            UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, vRoleId);
-                            HideKeyboard(AbotClient, Aupdate);
+                            UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, (RolesEnum)vRoleId);
+                            await HideInlineKeyboard(AbotClient, Aupdate);
                             
-                            await DoGetMenuRole(AbotClient, Aupdate, vRoleId);
+                            await DoGetMenuRole(AbotClient, Aupdate, (RolesEnum)vRoleId);
                             break;
+
                         case _userquerysbord:
-                            HideKeyboard(AbotClient, Aupdate);
+                            await HideInlineKeyboard(AbotClient, Aupdate);
                             var vLevel = int.Parse(strs[1]);
                             if (UserQuerysExists(vLevel))
                             {
-                                await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваш раздел {GetQuerysTreeName(vLevel)}");
-                                await ShowUserQueries(AbotClient, Aupdate, vLevel);
+                                await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваш раздел {GetTopicName(vLevel)}");
+                                await ShowUserButtons(AbotClient, Aupdate, vLevel);
                             }
                             else
                             {
                                 UserQuery?.SetUserQueryId(Aupdate?.CallbackQuery?.From?.Id, vLevel);
-                                DoConShowMessage($"раздел {GetQuerysTreeName(vLevel)}");
+                                DoConShowMessage($"раздел {GetTopicName(vLevel)}");
                                 if (Aupdate is not null)
-                                    await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваш раздел {GetQuerysTreeName(vLevel)}, задайте свой вопрос");
+                                    await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваш раздел {GetTopicName(vLevel)}, задайте свой вопрос");
                             }
                             break;
+
                         default:
                             break;
                     }
@@ -310,17 +417,14 @@ namespace MyTelegramBot.HandleUpdates
             }
         }
 
-        //static string GenerateHtmlTable()
-        //{
-        //    //Формируем HTML-код таблицы
-        //    string html = "<table>" +
-        //                  "<tr><th>Заголовок 1</th><th>Заголовок 2</th></tr>" +
-        //                  "<tr><td>Ячейка 1</td><td>Ячейка 2</td></tr>" +
-        //                  "<tr><td>Ячейка 3</td><td>Ячейка 4</td></tr>" +
-        //                  "</table>";
-        //    return html;
-        //}
-        public async Task UpdateCallBackAdminKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        /// <summary>
+        /// Admin Buttons
+        /// </summary>
+        /// <param name="AbotClient"></param>
+        /// <param name="Aupdate"></param>
+        /// <param name="Atoken"></param>
+        /// <returns></returns>
+        private async Task UpdateCallBackAdminKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.CallbackQuery?.Message is not null)
             {
@@ -330,16 +434,27 @@ namespace MyTelegramBot.HandleUpdates
                     switch (strs[0])
                     {
                         case _adminkeybord:
-                            HideKeyboard(AbotClient, Aupdate);
+                            await HideInlineKeyboard(AbotClient, Aupdate);
                             switch (int.Parse(strs[1]))
                             { 
                                 case (int)AdminButtons._ShowNewUsers:
                                     await AbotClient.SendMessage(
                                         chatId: Aupdate.CallbackQuery.Message.Chat.Id,
                                         //text: $"Тут будет таблица с новыми пользователями!\n{GenerateHtmlTable()}",
-                                        text: $"Тут будет таблица с новыми пользователями!",
+                                        text: $"Таблица с новыми пользователями!",
+                                        parseMode: ParseMode.Html);
+
+                                    var vTextUsers = "";
+                                    var vNewUsers = UserQuery?.SelectNewUsers();
+                                    if (vNewUsers != null)
+                                        foreach (var item in vNewUsers)
+                                            vTextUsers = $"{vTextUsers}\n{item.User_Ident}-{item.UserName}-{item.FirstName}";
+                                    await AbotClient.SendMessage(
+                                        chatId: Aupdate.CallbackQuery.Message.Chat.Id,
+                                        text: vTextUsers,
                                         parseMode: ParseMode.Html);
                                     break;
+
                                 case (int)AdminButtons._ShowInfo:
                                     await AbotClient.SendMessage(
                                         chatId: Aupdate.CallbackQuery.Message.Chat.Id,
@@ -350,6 +465,49 @@ namespace MyTelegramBot.HandleUpdates
                                     break;
                             }
                             break;
+
+                        default:
+                            break;
+                    }
+                }
+
+            }
+        }
+
+        private async Task UpdateCallBackOperatorKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
+        {
+            if (Aupdate?.CallbackQuery?.Message is not null)
+            {
+                var strs = Aupdate.CallbackQuery.Data?.Split('.');
+                if ((strs?.Length > 1) && (BotSession is not null))
+                {
+                    switch (strs[0])
+                    {
+                        case _adminkeybord:
+                            await HideInlineKeyboard(AbotClient, Aupdate);
+                            switch (int.Parse(strs[1]))
+                            {
+                                case (int)OperatorButtons._QueryOldestMessage:
+                                    await AbotClient.SendMessage(
+                                        chatId: Aupdate.CallbackQuery.Message.Chat.Id,
+                                        //text: $"Тут будет таблица с новыми пользователями!\n{GenerateHtmlTable()}",
+                                        text: $"Таблица с новыми пользователями!",
+                                        parseMode: ParseMode.Html);
+
+                                    
+                                    break;
+
+                                case (int)OperatorButtons._Queryestimation:
+                                    await AbotClient.SendMessage(
+                                        chatId: Aupdate.CallbackQuery.Message.Chat.Id,
+                                        text: $"Привет!",
+                                        parseMode: ParseMode.Html);
+                                    break;
+                                default:
+                                    break;
+                            }
+                            break;
+
                         default:
                             break;
                     }

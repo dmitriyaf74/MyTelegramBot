@@ -17,7 +17,7 @@ namespace MyTelegramBot.DapperClasses
             _connectionString = connectionString;
         }
 
-        public List<T> GetList<T>(string sql, object parameters = null)
+        public List<T> GetList<T>(string sql, object? parameters = null)
         {
             using (NpgsqlConnection connection = new (_connectionString))
             {

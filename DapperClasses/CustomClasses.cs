@@ -1,5 +1,13 @@
 ﻿namespace MyTelegramBot.DapperClasses
 {
+    public enum RolesEnum
+    {
+        reUnknown,
+        reUser,   
+        reAdmin,  
+        reOperator, 
+    }
+
     abstract class CustomQuery
     {
         /*public abstract long InsertUser(CustomUser Auser);
@@ -15,13 +23,13 @@
     }
     internal class CustomUser
     {
-        public long Id { get; set; }
+        public long? Id { get; set; }
         public string? UserName { get; set; }
         public long User_Ident { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
-        public long Roles_id { get; set; }
-        public string? UserQueryTreeId { get; set; }
+        public RolesEnum Roles_id { get; set; }
+        public long Topic_id {  get; set; }
 
     }
 
@@ -46,14 +54,17 @@
         public long Param_Int { get; set; }
 
     }
-    internal class UserMessages
+    internal class UserMessage
     {
         public long User_Id { get; set; }
         public string? MessageStr { get; set; }
         public DateTime Date_Time { get; set; }
         public bool Delivered { get; set; }
+        public long Answerer_Id { get; set; }
+        public long Topic_Id { get; set; }
+        public bool IsNew { get; set; }
     }
-    internal class UserQueriesTree
+    internal class UserTopics
     {
         public long Id { get; set; }
         public string? Name { get; set; }

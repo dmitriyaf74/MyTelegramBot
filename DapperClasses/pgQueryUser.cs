@@ -1,13 +1,16 @@
 ﻿using Dapper;
 using Npgsql;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Telegram.Bot.Types;
 
 namespace MyTelegramBot.DapperClasses
 {
+
     internal class pgQueryUser : CustomQuery
     {
         private string ConnectionString;
@@ -19,7 +22,11 @@ namespace MyTelegramBot.DapperClasses
         #region UserInfo
         public List<CustomRole> SelectRoles(long? Auser_id)
         {
-            string sql = @"select r.id, r.name from userroles ur join roles r on r.id = ur.role_id where ur.user_id = @user_id and ur.enabled = true";
+            string sql = @"select r.id, r.name 
+                from userroles ur 
+                join roles r on r.id = ur.role_id 
+                where ur.user_id = @user_id and ur.enabled = true
+                order by 1";
             DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
             object parameters = new { user_id = Auser_id };
             return dbHelper.GetList<CustomRole>(sql, parameters);
@@ -27,8 +34,8 @@ namespace MyTelegramBot.DapperClasses
                         
         public long InsertUser(CustomUser Auser)
         {
-            string sql = @"INSERT INTO userlist(username, user_ident, firstname, lastname, roles_id)
-                VALUES (@username, @user_ident, @firstname, @lastname, @roles_id) RETURNING id;";
+            string sql = @"INSERT INTO userlist(username, user_ident, firstname, lastname, roles_id, topic_id)
+                VALUES (@username, @user_ident, @firstname, @lastname, @roles_id, @topic_id) RETURNING id;";
 
             long vUserId;
             using (var connection = new NpgsqlConnection(ConnectionString))
@@ -39,9 +46,9 @@ namespace MyTelegramBot.DapperClasses
             }
             return vUserId;
         }
-        public CustomUser? SelectUser(long? AUser_Ident)
+        public CustomUser? SelectUserByIdent(long? AUser_Ident)
         {
-            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, userlist.user_query_tree_id 
+            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id
                 FROM userlist WHERE user_ident = @user_ident";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
@@ -50,6 +57,28 @@ namespace MyTelegramBot.DapperClasses
                 return connection.QueryFirstOrDefault<CustomUser>(sql, new { user_ident = AUser_Ident });
             }
         }
+
+        public CustomUser? SelectUserById(long? AUser_Id)
+        {
+            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id
+                FROM userlist WHERE id = @user_id";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                return connection.QueryFirstOrDefault<CustomUser>(sql, new { user_id = AUser_Id });
+            }
+        }
+
+        public List<CustomUser> SelectNewUsers()
+        {
+            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id
+                FROM userlist WHERE is_new = true";
+            DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
+            return dbHelper.GetList<CustomUser>(sql);
+        }
+
+
         public bool HasRole(long Auser_id, long Arole_id)
         {
             string sql = @"select 1 
@@ -83,12 +112,13 @@ namespace MyTelegramBot.DapperClasses
                 ON CONFLICT (user_id,param_name)
                 DO UPDATE SET 
                     param_str = EXCLUDED.param_str, 
-                    param_int = EXCLUDED.param_int;";
+                    param_int = EXCLUDED.param_int;
+                SELECT 1;";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                connection.QueryFirstOrDefault<UserParam>(sql, new { user_id = Auser_id, param_name = AparamName, param_value = Aparam_value });
+                connection.QuerySingle<int>(sql, new { user_id = Auser_id, param_name = AparamName, param_value = Aparam_value });
 
             }
         }
@@ -100,12 +130,13 @@ namespace MyTelegramBot.DapperClasses
                 ON CONFLICT (user_id,param_name)
                 DO UPDATE SET 
                     param_str = EXCLUDED.param_str, 
-                    param_int = EXCLUDED.param_int;";
+                    param_int = EXCLUDED.param_int;
+                SELECT 1;";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                connection.QueryFirstOrDefault<UserParam>(sql, new { user_id = Auser_id, param_name = AparamName, param_value = Aparam_value });
+                connection.QuerySingle<int>(sql, new { user_id = Auser_id, param_name = AparamName, param_value = Aparam_value });
 
             }
         }
@@ -123,16 +154,18 @@ namespace MyTelegramBot.DapperClasses
 
 
         /*User_Messages*/
-        public void WriteMessageToDB(long Auser_id, long Achat_id, long Aanswerer_id, string AMessageStr)
+        public void WriteMessageToDB(long Auser_id, long Achat_id, long Aanswerer_id, string AMessageStr, long Atopic_id)
         {
-            string sql = @"INSERT INTO user_messages ( user_id,answerer_id,chat_id,message_str,datetime )
-                VALUES (@user_id, @answerer_id, @chat_id, @message_str, datetime);";
+            string sql = @"INSERT INTO user_messages ( user_id,answerer_id,chat_id,message_str,datetime,topic_id )
+                VALUES (@user_id, @answerer_id, @chat_id, @message_str, @datetime, @topic_id);
+                SELECT 1;";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                var vParam = new { user_id = Auser_id, answerer_id = Aanswerer_id, chat_id = Achat_id, message_str = AMessageStr, datetime = DateTime.Now };
-                connection.QueryFirstOrDefault<UserParam>(sql, vParam);
+                var vParam = new { user_id = Auser_id, answerer_id = Aanswerer_id, chat_id = Achat_id, 
+                    message_str = AMessageStr, datetime = DateTime.Now, topic_id = Atopic_id };
+                connection.QuerySingle<int>(sql, vParam);
 
             }
         }
@@ -146,28 +179,44 @@ namespace MyTelegramBot.DapperClasses
             return dbHelper.GetList<CustomRole>(sql);
         }
 
-        public void SetUserRole(long? Auser_ident, long? Aroles_id)
+        public void SetUserRole(long? Auser_ident, RolesEnum? Aroles_id)
         {
-            string sql = @"UPDATE userlist set roles_id=@roles_id where user_ident = @user_ident;";
+            string sql = @"UPDATE userlist set roles_id=@roles_id where user_ident = @user_ident;
+                SELECT 1;";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
                 var vParam = new { user_id = Auser_ident, roles_id = Aroles_id };
-                connection.QueryFirstOrDefault<UserParam>(sql, vParam);
+                connection.QuerySingle<int>(sql, vParam);
 
             }
         }
 
-        public void SetUserQueryId(long? Auser_ident, long? Aquery_id)
+        public void SetUserQueryId(long? Auser_ident, long? Atopic_id)
         {
-            string sql = @"UPDATE userlist set user_query_tree_id=@query_id where user_ident = @user_ident;";
+            string sql = @"UPDATE userlist set topic_id = @topic_id where user_ident = @user_ident;
+                SELECT 1;";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                var vParam = new { user_ident = Auser_ident, query_id = Aquery_id };
-                connection.QueryFirstOrDefault<UserParam>(sql, vParam);
+                var vParam = new { user_ident = Auser_ident, topic_id = Atopic_id };
+                connection.QuerySingle<int>(sql, vParam);
+
+            }
+        }
+
+        public void SetUserChatId(long? Auser_ident, long? Achat_id)
+        {
+            string sql = @"UPDATE userlist set chat_id = @chat_id where user_ident = @user_ident;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_ident = Auser_ident, chat_id = Achat_id };
+                connection.QuerySingle<int>(sql, vParam);
 
             }
         }
@@ -175,26 +224,51 @@ namespace MyTelegramBot.DapperClasses
         #endregion Roles
 
         #region UserQuery
-        public List<UserQueriesTree> GetUserQuerysTree()
+        public List<UserTopics> GetTopics()
         {
-            string sql = @"select q.id, q.name, q.parent_id from userqueries_tree q";
+            string sql = @"select ut.id, ut.name, ut.parent_id from user_topics ut";
             DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
-            return dbHelper.GetList<UserQueriesTree>(sql);
+            return dbHelper.GetList<UserTopics>(sql);
         }
 
-        public void AddMessage(long? Auser_id, string? AMessageStr)
+        public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id)
         {
-            string sql = @"insert into user_messages(user_id, message_str) values (@user_id, @message_str);";
+            string sql = @"insert into user_messages(user_id, message_str, topic_id) 
+                values (@user_id, @message_str, @topic_id); 
+                SELECT 1;";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                var vParam = new { user_id = Auser_id, message_str = AMessageStr };
-                connection.QueryFirstOrDefault<UserParam>(sql, vParam);
+                var vParam = new { user_id = Auser_id, message_str = AMessageStr, topic_id = Atopic_id };
+                connection.QuerySingle<int>(sql, vParam);
 
             }
         }
         #endregion UserQuery
+        public long GetOldestMessageUserId()
+        {
+            string sql = @"select um.user_id from user_messages um where um.is_new = true order by um.datetime limit 1";
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new {};
+                return connection.ExecuteScalar<int>(sql, vParam);
+            }
+        }
+
+        public List<UserMessage> GetUserMessages(long? AUserId)
+        {
+            string sql = @"select um.user_id User_Id, um.message_str MessageStr, um.datetime Date_Time, 
+                um.delivered Delivered, um.answerer_id Answerer_Id, um.topic_id Topic_Id, um.is_new IsNew
+                from user_messages um 
+                where um.user_id = @user_id 
+                order by um.datetime";
+            DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
+            var vParam = new { user_id = AUserId };
+            return dbHelper.GetList<UserMessage>(sql, vParam);
+        }
+
     }
 
 }
