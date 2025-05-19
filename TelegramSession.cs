@@ -139,24 +139,6 @@ internal class TelegramSession
         DoConShowMessage("Бот остановлен.");
     }
 
-    //private async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
-    //{
-    //    DoConShowMessage($"{ARole_Id}");
-    //    switch (ARole_Id)
-    //    {
-    //        case RolesEnum.reUser:
-    //            await ShowUserButtons(AbotClient, Aupdate, 0);
-    //            break;
-    //        case RolesEnum.reAdmin:
-    //            await ShowAdminButtons(AbotClient, Aupdate, 0);
-    //            break;
-    //        case RolesEnum.reOperator:
-    //            await ShowOperatorButtons(AbotClient, Aupdate, 0);
-    //            break;
-    //        default:
-    //            DoConShowMessage($"Некорректная роль {ARole_Id}");
-    //            break;
-    //    }
-    //}
+    
 
 }
