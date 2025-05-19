@@ -1,5 +1,5 @@
 ﻿using MyTelegramBot.Classes;
-using MyTelegramBot.DapperClasses;
+using MyTelegramBot.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +15,12 @@ namespace MyTelegramBot.HandleUpdates
     {
 
         private  TelegramSession BotSession;
-        public HandleUpdatesAdmin(TelegramSession ABotSession, HandleUpdatesMain AHandleUpdatesUtils, pgQueryUser AUserQuery)
+        public HandleUpdatesAdmin(TelegramSession ABotSession, HandleUpdatesMain AHandleUpdatesUtils)
         {
             BotSession = ABotSession;
             _HandleUpdatesUtils = AHandleUpdatesUtils;
-            UserQuery = AUserQuery;
         }
-        private pgQueryUser? UserQuery;
+        private ICustomQuery? UserQuery { get => BotSession?.QueryUser; }
 
         private HandleUpdatesMain _HandleUpdatesUtils;
         public HandleUpdatesMain HandleUpdatesUtils { get => _HandleUpdatesUtils; }

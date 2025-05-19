@@ -1,5 +1,5 @@
 ﻿using MyTelegramBot.Classes;
-using MyTelegramBot.DapperClasses;
+using MyTelegramBot.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,19 +13,18 @@ namespace MyTelegramBot.HandleUpdates
     internal class HandleUpdatesUser : CustomHandleUpdates
     {
         private TelegramSession BotSession;
-        public HandleUpdatesUser(TelegramSession ABotSession, HandleUpdatesMain AHandleUpdatesUtils, pgQueryUser AUserQuery)
+        public HandleUpdatesUser(TelegramSession ABotSession, HandleUpdatesMain AHandleUpdatesUtils)
         {
             BotSession = ABotSession;
             _HandleUpdatesUtils = AHandleUpdatesUtils;
-            UserQuery = AUserQuery;
         }
-        private pgQueryUser? UserQuery;
+        private ICustomQuery? UserQuery { get => BotSession?.QueryUser; }
 
         private HandleUpdatesMain _HandleUpdatesUtils;
         public HandleUpdatesMain HandleUpdatesUtils { get => _HandleUpdatesUtils; }
 
         private const string _userquerysbord = "userquerysbord";
-        private List<UserTopics>? TopicList = null;
+        private List<CustomUserTopic>? TopicList = null;
 
         protected override async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
         {
@@ -33,7 +32,7 @@ namespace MyTelegramBot.HandleUpdates
                 await ShowUserButtons(AbotClient, Aupdate, 0);
         }
 
-        public List<UserTopics>? GetTopicList()
+        public List<CustomUserTopic>? GetTopicList()
         {
             if (TopicList is null)
                 TopicList = UserQuery?.GetTopics();
@@ -105,7 +104,6 @@ namespace MyTelegramBot.HandleUpdates
             else
             {
                 UserQuery?.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id);
-                UserQuery?.SetUserChatId(vuser?.User_Ident, Aupdate?.Message?.Chat.Id);
                 if (Aupdate?.Message?.From is not null)
                     await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Оператор ответит вам в ближайшее время");
             }

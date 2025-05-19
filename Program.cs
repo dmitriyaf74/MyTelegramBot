@@ -1,15 +1,17 @@
-﻿using System;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Logging;
+using MyTelegramBot.Classes;
 using MyTelegramBot.DapperClasses;
+using MyTelegramBot.HandleUpdates;
+using MyTelegramBot.Interfaces;
 using MyTelegramBot.secure;
+using System;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using MyTelegramBot.Classes;
-using MyTelegramBot.HandleUpdates;
-using Microsoft.Extensions.Logging;
+using MyTelegramBot.VirtDBClasses;
 //pg_dump -U "postgres" -d "TelegramHelper" -s -f "d:\test\TelegramHelper.sql"
 
 namespace HomeWork24
@@ -40,23 +42,27 @@ namespace HomeWork24
             MyAppConfig appConfig = new();
             if (!appConfig.ReadConfig())
               return;
-            var pgUseer = new pgQueryUser(appConfig.ConnectionString);
-            var telegramSession = new TelegramSession(appConfig.TelegramApiKey, pgUseer);
+
+            //ICustomQuery iCustomQuery = new pgQuery(appConfig.ConnectionString);
+            VirtDB.FillDB();
+            ICustomQuery iCustomQuery = new lstQuery("");
+
+            var telegramSession = new TelegramSession(appConfig.TelegramApiKey, iCustomQuery);
             telegramSession.procShowMessage += Console.WriteLine;
             telegramSession.procShowError += Console.WriteLine;
             telegramSession.procShowMessage += logger.Log;
 
 
-            gHandleUpdatesAll = new(ABotSession: telegramSession, AUserQuery: pgUseer);
+            gHandleUpdatesAll = new(ABotSession: telegramSession);
             await RegHandleUpdates(gHandleUpdatesAll, logger, telegramSession);
 
-            gHandleUpdatesAdmin = new(telegramSession, gHandleUpdatesAll, pgUseer);
+            gHandleUpdatesAdmin = new(telegramSession, gHandleUpdatesAll);
             await RegHandleUpdates(gHandleUpdatesAdmin, logger, telegramSession);
 
-            gHandleUpdatesOperator = new(telegramSession, gHandleUpdatesAll, pgUseer);
+            gHandleUpdatesOperator = new(telegramSession, gHandleUpdatesAll);
             await RegHandleUpdates(gHandleUpdatesOperator, logger, telegramSession);
 
-            gHandleUpdatesUser = new(telegramSession, gHandleUpdatesAll, pgUseer);
+            gHandleUpdatesUser = new(telegramSession, gHandleUpdatesAll);
             await RegHandleUpdates(gHandleUpdatesUser, logger, telegramSession);
 
 

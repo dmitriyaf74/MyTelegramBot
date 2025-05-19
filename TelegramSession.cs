@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualBasic;
 using MyTelegramBot.Classes;
-using MyTelegramBot.DapperClasses;
 using MyTelegramBot.HandleUpdates;
+using MyTelegramBot.Interfaces;
 using System;
 using System.Data;
 using System.Threading;
@@ -18,6 +18,21 @@ using static Telegram.Bot.TelegramBotClient;
 
 internal class TelegramSession
 {
+    public TelegramSession(string botToken, ICustomQuery AQueryUser)
+    {
+        // Создаем экземпляр клиента Telegram Bot API с использованием предоставленного токена
+        botClient = new TelegramBotClient(botToken);
+        botClient.DropPendingUpdates();
+
+        //Telegram.Bot.Polling.DefaultUpdateReceiver.ReceiveAsync(IUpdateHandler updateHandler, CancellationToken cancellationToken)
+        cts = new CancellationTokenSource();
+
+        _QueryUser = AQueryUser;
+        InitRoleList();
+    }
+    private ICustomQuery _QueryUser { get; set; }
+    public ICustomQuery QueryUser { get => _QueryUser; }
+
     private TelegramBotClient botClient;
     private CancellationTokenSource cts;
 
@@ -26,7 +41,6 @@ internal class TelegramSession
     public DoGetMenuRoleDelegate? DoGetMenuRole = null;
 
 
-    static pgQueryUser? QueryUser { get; set; }
 
     public Dictionary<int, string?>? Roles = new();
 
@@ -53,21 +67,7 @@ internal class TelegramSession
             foreach (var r in rList)
                 Roles.Add((int)r.Id, r.Name);
     }
-
     
-    public TelegramSession(string botToken, pgQueryUser? AQueryUser)
-    {
-        // Создаем экземпляр клиента Telegram Bot API с использованием предоставленного токена
-        botClient = new TelegramBotClient(botToken);
-        botClient.DropPendingUpdates();
-
-        //Telegram.Bot.Polling.DefaultUpdateReceiver.ReceiveAsync(IUpdateHandler updateHandler, CancellationToken cancellationToken)
-        cts = new CancellationTokenSource();
-
-        QueryUser = AQueryUser;
-        InitRoleList();
-    }
-
     public async Task DoGetMenuRolesDelegates(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
     {
         if (DoGetMenuRole != null)

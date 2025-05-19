@@ -1,30 +1,29 @@
 ﻿using Microsoft.VisualBasic;
 using MyTelegramBot.Classes;
-using MyTelegramBot.DapperClasses;
+using MyTelegramBot.Interfaces;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.Enums;
-using System.Runtime.CompilerServices;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace MyTelegramBot.HandleUpdates
 {
     internal class HandleUpdatesMain : CustomHandleUpdates
     {
         public TelegramSession BotSession;
-        public HandleUpdatesMain(TelegramSession ABotSession, pgQueryUser AUserQuery)
+        public HandleUpdatesMain(TelegramSession ABotSession)
         {
             BotSession = ABotSession;
-            UserQuery = AUserQuery;
         }
-        private pgQueryUser? UserQuery;
+        private ICustomQuery? UserQuery { get => BotSession?.QueryUser; }
 
         private const string _rolekeybord = "rolekeybord";
 
@@ -152,7 +151,6 @@ namespace MyTelegramBot.HandleUpdates
                 if (vuser?.Roles_id != RolesEnum.reUser)
                     return;
                 UserQuery?.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id);
-                UserQuery?.SetUserChatId(vuser?.User_Ident, Aupdate?.Message?.Chat.Id);
                 DoConShowMessage($"Оператор ответит вам в ближайшее время");
             }
 
