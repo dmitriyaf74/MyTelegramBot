@@ -5,13 +5,15 @@ using MyTelegramBot.DapperClasses;
 using MyTelegramBot.HandleUpdates;
 using MyTelegramBot.Interfaces;
 using MyTelegramBot.secure;
+using MyTelegramBot.VirtDBClasses;
+using Npgsql;
 using System;
+using System.Data.Common;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using MyTelegramBot.VirtDBClasses;
 //pg_dump -U "postgres" -d "TelegramHelper" -s -f "d:\test\TelegramHelper.sql"
 
 namespace HomeWork24
@@ -35,6 +37,40 @@ namespace HomeWork24
         public static HandleUpdatesAdmin? gHandleUpdatesAdmin;
         public static HandleUpdatesOperator? gHandleUpdatesOperator;
         public static HandleUpdatesUser? gHandleUpdatesUser;
+
+        public static bool DatabaseExists(string connectionString, string databaseName)
+        {
+            try
+            {
+                // Создаем строку подключения к postgres, но без указания конкретной базы данных.
+                // Используем "postgres" в качестве базы данных по умолчанию для подключения.
+                NpgsqlConnectionStringBuilder builder = new NpgsqlConnectionStringBuilder(connectionString);
+                string originalDatabase = builder.Database; // Сохраняем оригинальное имя базы данных
+                builder.Database = "postgres"; // Подключаемся к базе данных postgres для проверки
+                string connectionStringWithoutDatabase = builder.ConnectionString;
+
+
+                using (var connection = new NpgsqlConnection(connectionStringWithoutDatabase))
+                {
+                    connection.Open();
+
+                    // Выполняем запрос для проверки существования базы данных.
+                    using (var cmd = new NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname='{databaseName}'", connection))
+                    {
+                        object result = cmd.ExecuteScalar();
+
+                        // Если запрос вернул 1, значит, база данных существует.
+                        return result != null && result.ToString() == "1";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Обработка исключений, например, если не удалось подключиться к серверу.
+                Console.WriteLine($"Ошибка при проверке базы данных: {ex.Message}");
+                return false;
+            }
+        }
         public static async Task Main()
         {
             Logger logger = new Logger("application.log");
@@ -43,9 +79,28 @@ namespace HomeWork24
             if (!appConfig.ReadConfig())
               return;
 
-            //ICustomQuery iCustomQuery = new pgQuery(appConfig.ConnectionString);
-            VirtDB.FillDB();
-            ICustomQuery iCustomQuery = new lstQuery("");
+            //string connectionString = appConfig.ConnectionString;
+            string connectionString = "Host=localhost;Database=TelegramHelper;Username=postgres;Password=postgres";
+            string dbName = "";
+            string[] con = connectionString.Split(';');
+            foreach (string s in con) 
+            {
+                string[] param = s.Split("=");
+                if ((param.Length > 0) && (param[0] == "Database"))
+                {
+                    dbName = param[1];
+                    break;
+                }
+            }
+
+            ICustomQuery iCustomQuery;
+            if (DatabaseExists(connectionString, dbName))
+                iCustomQuery = new pgQuery(connectionString);
+            else
+            {
+                VirtDB.FillDB();
+                iCustomQuery = new lstQuery("");
+            }
 
             var telegramSession = new TelegramSession(appConfig.TelegramApiKey, iCustomQuery);
             telegramSession.procShowMessage += Console.WriteLine;
