@@ -38,36 +38,28 @@ namespace HomeWork24
         public static HandleUpdatesOperator? gHandleUpdatesOperator;
         public static HandleUpdatesUser? gHandleUpdatesUser;
 
-        public static bool DatabaseExists(string connectionString, string databaseName)
+        public static bool DatabaseExists(string connectionString)
         {
             try
             {
-                // Создаем строку подключения к postgres, но без указания конкретной базы данных.
-                // Используем "postgres" в качестве базы данных по умолчанию для подключения.
                 NpgsqlConnectionStringBuilder builder = new NpgsqlConnectionStringBuilder(connectionString);
-                string originalDatabase = builder.Database; // Сохраняем оригинальное имя базы данных
-                builder.Database = "postgres"; // Подключаемся к базе данных postgres для проверки
+                string originalDatabase = builder.Database;
+                builder.Database = "postgres";
                 string connectionStringWithoutDatabase = builder.ConnectionString;
-
 
                 using (var connection = new NpgsqlConnection(connectionStringWithoutDatabase))
                 {
                     connection.Open();
-
-                    // Выполняем запрос для проверки существования базы данных.
-                    using (var cmd = new NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname='{databaseName}'", connection))
+                    using (var cmd = new NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname='{originalDatabase}'", connection))
                     {
                         object result = cmd.ExecuteScalar();
-
-                        // Если запрос вернул 1, значит, база данных существует.
                         return result != null && result.ToString() == "1";
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Обработка исключений, например, если не удалось подключиться к серверу.
-                Console.WriteLine($"Ошибка при проверке базы данных: {ex.Message}");
+                Console.WriteLine($"Ошибка подключения к серверу БД: {ex.Message}");
                 return false;
             }
         }
@@ -79,22 +71,10 @@ namespace HomeWork24
             if (!appConfig.ReadConfig())
               return;
 
-            //string connectionString = appConfig.ConnectionString;
-            string connectionString = "Host=localhost;Database=TelegramHelper;Username=postgres;Password=postgres";
-            string dbName = "";
-            string[] con = connectionString.Split(';');
-            foreach (string s in con) 
-            {
-                string[] param = s.Split("=");
-                if ((param.Length > 0) && (param[0] == "Database"))
-                {
-                    dbName = param[1];
-                    break;
-                }
-            }
+            string connectionString = appConfig.ConnectionString;
 
             ICustomQuery iCustomQuery;
-            if (DatabaseExists(connectionString, dbName))
+            if (DatabaseExists(connectionString))
                 iCustomQuery = new pgQuery(connectionString);
             else
             {
