@@ -18,27 +18,27 @@ namespace MyTelegramBot.VirtDBClasses
             FillUserRoles();
         }
 
-        public static List<CustomRole> tRole { get; } = new(); 
-        public static List<CustomUserMessage> tUserMessage { get; } = new();
-        public static List<CustomUser> tUser { get; } = new();
+        public static List<CustomRole> tRoles { get; } = new(); 
+        public static List<CustomUserMessage> tUserMessages { get; } = new();
+        public static List<CustomUser> tUsers { get; } = new();
         public static List<CustomUserTopic> tUserTopics { get; } = new();
         public static List<CustomUserRole> tUserRoles { get; } = new();
 
         private static void FillRoles()
         {
-            tRole.Clear();
-            tRole.Add(new CustomRole() { Id = 1, Name = "Пользователь" });
-            tRole.Add(new CustomRole() { Id = 2, Name = "Администратор" });
-            tRole.Add(new CustomRole() { Id = 3, Name = "Оператор" });
+            tRoles.Clear();
+            tRoles.Add(new CustomRole() { Id = 1, Name = "Пользователь" });
+            tRoles.Add(new CustomRole() { Id = 2, Name = "Администратор" });
+            tRoles.Add(new CustomRole() { Id = 3, Name = "Оператор" });
         }
         private static void FillUserMessages()
         {
-            tUserMessage.Clear();
+            tUserMessages.Clear();
         }
         private static void FillUsers()
         {
-            tUser.Clear();
-            tUser.Add(new CustomUser() { Id = 1, UserName = "Dmitry", Roles_id = RolesEnum.reUser, User_Ident = 311068358 });
+            tUsers.Clear();
+            tUsers.Add(new CustomUser() { Id = 1, UserName = "Dmitry", Roles_id = RolesEnum.reUser, User_Ident = 311068358, Is_New = true });
         }
         private static void FillUserTopics()
         {

@@ -16,7 +16,7 @@ namespace MyTelegramBot.Interfaces
         public List<CustomUser> SelectNewUsers();
         public List<CustomRole> GetAllRoles();
         public void SetUserRole(long? Auser_ident, RolesEnum? Aroles_id);
-        public void SetUserQueryId(long? Auser_ident, long? Atopic_id);
+        public void SetUserTopicId(long? Auser_ident, long? Atopic_id);
         public List<CustomUserTopic> GetTopics();
         public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id);
         public long GetOldestMessageUserId();

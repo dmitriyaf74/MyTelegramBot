@@ -104,7 +104,7 @@ namespace MyTelegramBot.DapperClasses
             }
         }
 
-        public void SetUserQueryId(long? Auser_ident, long? Atopic_id)
+        public void SetUserTopicId(long? Auser_ident, long? Atopic_id)
         {
             string sql = @"UPDATE userlist set topic_id = @topic_id where user_ident = @user_ident;
                 SELECT 1;";

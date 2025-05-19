@@ -21,8 +21,8 @@
         public string? MessageStr { get; set; }
         public DateTime Date_Time { get; set; }
         public bool Delivered { get; set; }
-        public long Answerer_Id { get; set; }
-        public long Topic_Id { get; set; }
+        public long? Answerer_Id { get; set; }
+        public long? Topic_Id { get; set; }
         public bool IsNew { get; set; }
     }
 
@@ -33,8 +33,9 @@
         public long User_Ident { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
-        public RolesEnum Roles_id { get; set; }
-        public long Topic_id {  get; set; }
+        public RolesEnum? Roles_id { get; set; }
+        public long? Topic_id {  get; set; }
+        public bool Is_New { get; set; }
 
     }
     

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Telegram.Bot.Types;
 
 namespace MyTelegramBot.VirtDBClasses
 {
@@ -19,26 +20,37 @@ namespace MyTelegramBot.VirtDBClasses
         #region UserInfo
         public List<CustomRole> SelectRoles(long? Auser_id)
         {
-            return new();
+            var filteredUserRoles = VirtDB.tUserRoles.
+                Where(x => x.User_Id == Auser_id).ToList();
+
+            var query = (from сustomRole in VirtDB.tRoles
+                        join сustomUserRole in filteredUserRoles on сustomRole.Id equals сustomUserRole.Role_Id
+                        select сustomRole).ToList();
+
+            return query;
         }
 
         public long InsertUser(CustomUser Auser)
         {
+            VirtDB.tUsers.Add(Auser);
             return 0;
         }
         public CustomUser? SelectUserByIdent(long? AUser_Ident)
         {
-            return new();
+            return VirtDB.tUsers.
+                Where(x => x.User_Ident == AUser_Ident).FirstOrDefault();
         }
 
         public CustomUser? SelectUserById(long? AUser_Id)
         {
-            return new();
+            return VirtDB.tUsers.
+                Where(x => x.Id == AUser_Id).FirstOrDefault();
         }
 
         public List<CustomUser> SelectNewUsers()
         {
-            return new();
+            return VirtDB.tUsers.
+                Where(x => x.Is_New == true).ToList();
         }
 
         #endregion UserInfo
@@ -46,17 +58,25 @@ namespace MyTelegramBot.VirtDBClasses
         #region Roles
         public List<CustomRole> GetAllRoles()
         {
-            return new();
+            return VirtDB.tRoles;
         }
 
         public void SetUserRole(long? Auser_ident, RolesEnum? Aroles_id)
         {
-            
+            var vUser = SelectUserByIdent(Auser_ident);
+            if ((vUser != null) && (Aroles_id != null))
+            {
+                vUser.Roles_id = Aroles_id; 
+            }
         }
 
-        public void SetUserQueryId(long? Auser_ident, long? Atopic_id)
+        public void SetUserTopicId(long? Auser_ident, long? Atopic_id)
         {
-           
+            var vUser = SelectUserByIdent(Auser_ident);
+            if ((vUser != null) && (Atopic_id != null))
+            {
+                vUser.Topic_id = Atopic_id; 
+            }
         }
 
         #endregion Roles
@@ -64,22 +84,35 @@ namespace MyTelegramBot.VirtDBClasses
         #region UserQuery
         public List<CustomUserTopic> GetTopics()
         {
-            return new();
+            return VirtDB.tUserTopics;
         }
 
         public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id)
         {
-            
+            CustomUserMessage mes = new() 
+            { 
+                User_Id = Auser_id ?? 0, 
+                MessageStr = AMessageStr, 
+                Topic_Id = Atopic_id, 
+                Date_Time = DateTime.Now,
+                Delivered = false,
+                IsNew = true,
+            };
+            VirtDB.tUserMessages.Add(mes);
         }
         #endregion UserQuery
         public long GetOldestMessageUserId()
         {
-            return 0;
+            return VirtDB.tUserMessages.
+                Where(x => x.IsNew = true).
+                OrderBy(x => x.Date_Time).
+                Select(x => x.User_Id).FirstOrDefault();
         }
 
         public List<CustomUserMessage> GetUserMessages(long? AUserId)
         {
-            return new();
+            return VirtDB.tUserMessages.
+                Where(x => x.User_Id == AUserId).ToList();
         }
     }
 }

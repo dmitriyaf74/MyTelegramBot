@@ -137,7 +137,7 @@ namespace MyTelegramBot.HandleUpdates
                             }
                             else
                             {
-                                UserQuery?.SetUserQueryId(Aupdate?.CallbackQuery?.From?.Id, vLevel);
+                                UserQuery?.SetUserTopicId(Aupdate?.CallbackQuery?.From?.Id, vLevel);
                                 DoConShowMessage($"раздел {GetTopicName(vLevel)}");
                                 if (Aupdate is not null)
                                     await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваш раздел {GetTopicName(vLevel)}, задайте свой вопрос");

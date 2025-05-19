@@ -3,6 +3,7 @@ using MyTelegramBot.Classes;
 using MyTelegramBot.HandleUpdates;
 using MyTelegramBot.Interfaces;
 using System;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Threading;
 using Telegram.Bot;
