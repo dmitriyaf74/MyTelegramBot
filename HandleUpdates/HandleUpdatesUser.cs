@@ -58,7 +58,7 @@ namespace MyTelegramBot.HandleUpdates
         {
             if (!UserQuerysExists(ALevel))
                 return;
-            Dictionary<int, string> keyboardList = new();
+            Dictionary<long, string> keyboardList = new();
             GetTopicList();
             if (TopicList is not null)
                 foreach (var r in TopicList)
@@ -73,14 +73,7 @@ namespace MyTelegramBot.HandleUpdates
                 await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Выберите раздел:", replyMarkup:
                                       HandleUpdatesUtils.GetKeyBoard(keyboardList, _userquerysbord));
         }
-
-        /// <summary>
-        /// Simple Commands
-        /// </summary>
-        /// <param name="AbotClient"></param>
-        /// <param name="Aupdate"></param>
-        /// <param name="Atoken"></param>
-        /// <returns></returns>
+                
         protected override async Task UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.Message?.Text == string.Empty || Aupdate?.Message?.Text?[0] == '\0')
@@ -115,7 +108,7 @@ namespace MyTelegramBot.HandleUpdates
                         UserQuery.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id, null);
                         long? answerer_ident = UserQuery.GetAnswererIdent(vuser?.Id);
                         if (answerer_ident != null && answerer_ident != 0)
-                            await AbotClient.SendMessage(answerer_ident, Aupdate?.Message?.Text);
+                            await AbotClient.SendMessage(answerer_ident, Aupdate?.Message?.Text ?? "");
                         if (Aupdate?.Message?.From is not null)
                             if (!vHasOpenedMessages)
                                 await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Оператор ответит вам в ближайшее время");
@@ -125,14 +118,7 @@ namespace MyTelegramBot.HandleUpdates
 
 
         }
-
-        /// <summary>
-        /// User Buttons
-        /// </summary>
-        /// <param name="AbotClient"></param>
-        /// <param name="Aupdate"></param>
-        /// <param name="Atoken"></param>
-        /// <returns></returns>
+                
         protected override async Task UpdateCallBackKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.CallbackQuery?.Message is not null)

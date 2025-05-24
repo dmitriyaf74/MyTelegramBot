@@ -264,6 +264,53 @@ namespace MyTelegramBot.DapperClasses
             }
         }
 
+        public void AddRole(long? AUser_id, RolesEnum? ARole_id)
+        {
+            string sql = @"insert into userroles(user_id, role_id)
+                values(@user_id, @role_id)
+                on conflict(user_id, role_id)
+                do update set enabled = true;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = AUser_id, role_id = ARole_id };
+                connection.QuerySingle<int>(sql, vParam);
+
+            }
+        }
+
+        public void DropRole(long? AUser_id, RolesEnum? ARole_id)
+        {
+            string sql = @"update userroles
+                set enabled = false
+                where user_id = @user_id and role_id = @role_id;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = AUser_id, role_id = ARole_id };
+                connection.QuerySingle<int>(sql, vParam);
+            }
+        }
+
+        public void HideFromNewUser(long? AUser_id)
+        {
+            string sql = @"update userlist
+                set is_new = false
+                where id = @user_id;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = AUser_id };
+                connection.QuerySingle<int>(sql, vParam);
+            }
+        }
+
     }
 
 }

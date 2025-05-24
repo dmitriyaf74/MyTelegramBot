@@ -28,6 +28,9 @@ namespace MyTelegramBot.Interfaces
         public void ResumeChat(long? AChat_id);
         public List<DelayedChats> GetDelayedChats(long? AUser_id);
         public long? GetAnswererIdent(long? AUser_id);
+        public void AddRole(long? AUser_id, RolesEnum? ARole_id);
+        public void DropRole(long? AUser_id, RolesEnum? ARole_id);
+        public void HideFromNewUser(long? AUser_id);
 
     }
 }

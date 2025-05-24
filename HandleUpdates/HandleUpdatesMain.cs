@@ -28,7 +28,7 @@ namespace MyTelegramBot.HandleUpdates
 
         private const string _rolekeybord = "rolekeybord";
 
-        public InlineKeyboardMarkup GetKeyBoard(Dictionary<int, string> AkeyboardList, string prefix)
+        public InlineKeyboardMarkup GetKeyBoard(Dictionary<long, string> AkeyboardList, string prefix)
         {
             var keyboardRows = new List<List<InlineKeyboardButton>>();
             foreach (var item in AkeyboardList)
@@ -96,9 +96,9 @@ namespace MyTelegramBot.HandleUpdates
             return false;
         }
 
-        private Dictionary<int, string> GetRoleKeyboardList(long? Auser_ident)
+        private Dictionary<long, string> GetRoleKeyboardList(long? Auser_ident)
         {
-            Dictionary<int, string> keyboardList = new();
+            Dictionary<long, string> keyboardList = new();
             if (FRoleList != null)
             {
                 if (FRoleList.Count > 0)

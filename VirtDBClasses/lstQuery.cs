@@ -158,5 +158,32 @@ namespace MyTelegramBot.VirtDBClasses
                 Where(x => x.Sender_Id == AUser_id).
                 Select(x => x.User_Ident).FirstOrDefault();
         }
+
+        public void AddRole(long? AUser_id, RolesEnum? ARole_id)
+        {
+            CustomUserRole? vRole = VirtDB.tUserRoles.Where(x => x.User_Id == AUser_id && x.Role_Id == ARole_id).FirstOrDefault();
+            if (vRole == null)
+            {
+                vRole = new CustomUserRole();
+                VirtDB.tUserRoles.Add(vRole);
+            }
+            vRole.User_Id = AUser_id ?? 0;
+            vRole.Role_Id = ARole_id ?? 0;
+            vRole.Enabled = true;
+        }
+
+        public void DropRole(long? AUser_id, RolesEnum? ARole_id)
+        {
+            CustomUserRole? vRole = VirtDB.tUserRoles.Where(x => x.User_Id == AUser_id && x.Role_Id == ARole_id).FirstOrDefault();
+            if (vRole != null)
+                vRole.Enabled = false;
+        }
+
+        public void HideFromNewUser(long? AUser_id)
+        {
+            var vUser = SelectUserById(AUser_id);
+            if (vUser != null)
+                vUser.Is_New = false;
+        }
     }
 }
