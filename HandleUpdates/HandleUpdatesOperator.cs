@@ -29,7 +29,11 @@ namespace MyTelegramBot.HandleUpdates
 
         private const string cstrGetOldestMessage = "/Получить обращение";
         private const string cstrGetCloseDialog = "/Завершить диалог";
+        private const string cstrGetDelayDialog = "/Отложить диалог";
+        private const string cstrGetDelayedDialogs = "/Отложенные диалоги";
+        private const string cstrStart = "/start";
         private const string _operatorquerysbord = "operatorquerysbord";
+        private const string _delayedchatsbord = "delayedchatsbord";
         private enum OperatorButtons
         {
             _QueryOldestMessage,
@@ -43,13 +47,15 @@ namespace MyTelegramBot.HandleUpdates
         }
         private async Task ShowOperatorButtons(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
         {
-            var keyboard = new ReplyKeyboardMarkup();
-            keyboard.ResizeKeyboard = true;
+            var info = "Выберите действие: ";
 
-            var info = "Выберите доступную роль";
+            var buttons = new List<KeyboardButton[]>();
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(cstrGetOldestMessage), new KeyboardButton(cstrGetCloseDialog) });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(cstrGetDelayDialog), new KeyboardButton(cstrGetDelayedDialogs) });
+            buttons.Add(new KeyboardButton[] { new KeyboardButton(cstrStart) });
+            var keyboard = new ReplyKeyboardMarkup(buttons);
 
-            keyboard.AddButton(new KeyboardButton(cstrGetOldestMessage));
-            keyboard.AddButton(new KeyboardButton(cstrGetCloseDialog));
+
 
 
             long? vChatId = null;
@@ -61,6 +67,30 @@ namespace MyTelegramBot.HandleUpdates
 
             if (vChatId != null)
                 await AbotClient.SendMessage(vChatId, info, replyMarkup: keyboard);
+        }
+
+        private async Task ShowDelayedChats(ITelegramBotClient AbotClient, Update Aupdate, List<DelayedChats> ADelayedChats)
+        {
+            var keyboardRows = new List<List<InlineKeyboardButton>>();
+            foreach (var item in ADelayedChats)
+            {
+                var vChat = UserQuery?.SelectUserById(item.Chat_Id);
+                var vUser = UserQuery?.SelectUserById(item.User_Id);
+                if (vChat == null || vUser == null)
+                    continue;
+                var button = new InlineKeyboardButton($"{vChat.UserName}/{vChat.FirstName}/{vChat.User_Ident}" +
+                    $"---{vUser.UserName}/{vUser.FirstName}/{vUser.User_Ident}", 
+                    $"{_delayedchatsbord}.{item.Chat_Id}");
+                var row = new List<InlineKeyboardButton> { button };
+                keyboardRows.Add(row);
+            }
+            var KB = new InlineKeyboardMarkup(keyboardRows);
+
+            if (Aupdate?.Message is not null)
+                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Выберите чат:", replyMarkup: KB);
+            else
+            if (Aupdate?.CallbackQuery?.Message is not null)
+                await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Выберите чат:", replyMarkup: KB);
         }
 
         protected override async Task UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
@@ -112,7 +142,7 @@ namespace MyTelegramBot.HandleUpdates
 
                                     await AbotClient.SendMessage(Aupdate.Message.Chat.Id, vMessage);
                                 }
-                                if (vSender?.Id != vuser?.Id)
+                                //if (vSender?.Id != vuser?.Id)
                                     UserQuery?.SetActiveSenderId(vuser?.Id, vUserMessages[0].User_Id);
                             }
                             else
@@ -132,10 +162,29 @@ namespace MyTelegramBot.HandleUpdates
                             if (vsender?.User_Ident != null)
                                 await AbotClient.SendMessage(vsender.User_Ident, vMessage);
                             //Отправляем сообщение оператору
-                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, vMessage);
+                            if (vsender?.User_Ident != Aupdate.Message.Chat.Id)
+                                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, vMessage);
                             //Закрываем диалог
                             UserQuery?.CloseActiveMessages(vuser.Sender_Id);
                         }
+                        break;
+                    case cstrGetDelayDialog:
+                        if ((vuser is not null) && (Aupdate?.Message is not null))
+                        {
+                            if (vuser.Sender_Id != null)
+                              UserQuery?.DelayChat(vuser.Id, vuser.Sender_Id);
+                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Диалог отложен");
+                        }
+                        break;
+                    case cstrGetDelayedDialogs:
+                        if (vuser is not null)
+                        {
+                            var vDelayedChats = UserQuery?.GetDelayedChats(vuser.Id);
+                            if (vDelayedChats != null)
+                                await ShowDelayedChats(AbotClient, Aupdate, vDelayedChats);
+                        }
+                        break;
+                    case cstrStart:
                         break;
                     default:
                         break;
@@ -155,9 +204,8 @@ namespace MyTelegramBot.HandleUpdates
                     if (vsender?.User_Ident != null)
                         await AbotClient.SendMessage(vsender.User_Ident, Aupdate.Message.Text);
                     //Отправляем сообщение оператору
-                    await AbotClient.SendMessage(Aupdate.Message.Chat.Id, Aupdate.Message.Text);
-                    //Закрываем диалог
-                    UserQuery?.CloseActiveMessages(vuser.Sender_Id);
+                    if (vsender?.User_Ident != Aupdate.Message.Chat.Id)
+                        await AbotClient.SendMessage(Aupdate.Message.Chat.Id, Aupdate.Message.Text);
                 }
                 DoConShowMessage($"Оператор");
             }
@@ -197,7 +245,11 @@ namespace MyTelegramBot.HandleUpdates
                                     break;
                             }
                             break;
-
+                        case _delayedchatsbord:
+                            UserQuery?.ResumeChat(int.Parse(strs[1]));
+                            _HandleUpdatesUtils?.HideInlineKeyboard(AbotClient, Aupdate);
+                            await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Диалог восстановлен");
+                            break;
                         default:
                             break;
                     }

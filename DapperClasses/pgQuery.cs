@@ -1,4 +1,6 @@
 ﻿using Dapper;
+using MyTelegramBot.Classes;
+using MyTelegramBot.Interfaces;
 using Npgsql;
 using System;
 using System.Collections;
@@ -6,9 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Telegram.Bot.Types;
-using MyTelegramBot.Interfaces;
-using MyTelegramBot.Classes;
 
 namespace MyTelegramBot.DapperClasses
 {
@@ -149,7 +150,12 @@ namespace MyTelegramBot.DapperClasses
 
         public (long?, long?) GetOldestMessageUserId()
         {
-            string sql = @"select um.user_id, um.topic_id from user_messages um where um.is_new = true and um.answerer_id is null order by um.datetime limit 1";
+            string sql = @"select um.user_id, um.topic_id from user_messages um 
+                where um.is_new = true 
+					and um.answerer_id is null 
+					and not exists(select 1 from delayed_chats dc where dc.chat_id = um.user_id and dc.enabled = true)
+					order by um.datetime 
+					limit 1	";
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
@@ -159,7 +165,7 @@ namespace MyTelegramBot.DapperClasses
                     {
                         //var vParam = new { };
                         //return connection.ExecuteScalar < int; int> (sql, vParam);
-                        return (reader.GetInt64(0), reader.GetInt64(0));
+                        return (reader.GetInt64(0), reader.GetInt64(1));
                     }
             }
             return (null, null);
@@ -201,6 +207,60 @@ namespace MyTelegramBot.DapperClasses
                 var vParam = new { user_id = ASender_id };
                 connection.QuerySingle<int>(sql, vParam);
 
+            }
+        }
+
+        public void DelayChat(long? AUser_id, long? AChat_id)
+        {
+            string sql = @"insert into delayed_chats(user_id, chat_id)
+                values(@user_id, @chat_id)
+                on conflict(chat_id)
+                do update set enabled = true, user_id = @user_id;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = AUser_id, chat_id = AChat_id };
+                connection.QuerySingle<int>(sql, vParam);
+
+            }
+        }
+        public void ResumeChat(long? AChat_id)
+        {
+            string sql = @"update delayed_chats
+                set enabled = false
+                where chat_id = @chat_id;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { chat_id = AChat_id };
+                connection.QuerySingle<int>(sql, vParam);
+
+            }
+        }
+        public List<DelayedChats> GetDelayedChats(long? AUser_id)
+        {
+            string sql = @"select user_id, chat_id
+                from delayed_chats
+                where enabled = true
+                order by case when user_id = @user_id then 0 else 1 end, user_id, chat_id;";
+            DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
+            var vParam = new { user_id = AUser_id };
+            return dbHelper.GetList<DelayedChats>(sql, vParam);
+        }
+
+        public long? GetAnswererIdent(long? AUser_id)
+        {
+            string sql = @"select user_ident from userlist where sender_id = @user_id;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = AUser_id };
+                return connection.QuerySingle<int>(sql, vParam);
             }
         }
 

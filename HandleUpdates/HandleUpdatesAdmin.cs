@@ -35,10 +35,14 @@ namespace MyTelegramBot.HandleUpdates
         protected override async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
         {
             if (ARole_Id == RolesEnum.reAdmin)
+            {
                 await ShowAdminButtons(AbotClient, Aupdate, 0);
+                if (_HandleUpdatesUtils != null)
+                    await _HandleUpdatesUtils.ShowDefaultButtons(AbotClient, Aupdate, 0);
+            }
         }
 
-        
+
         private async Task ShowAdminButtons(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
         {
             const string cSelectReport = "Выберите отчет:";

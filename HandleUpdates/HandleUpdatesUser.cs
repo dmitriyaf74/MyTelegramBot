@@ -29,7 +29,11 @@ namespace MyTelegramBot.HandleUpdates
         protected override async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
         {
             if (ARole_Id == RolesEnum.reUser)
+            {
                 await ShowUserButtons(AbotClient, Aupdate, 0);
+                if (_HandleUpdatesUtils != null)
+                    await _HandleUpdatesUtils.ShowDefaultButtons(AbotClient, Aupdate, 0);
+            }
         }
 
         public List<CustomUserTopic>? GetTopicList()
@@ -105,10 +109,17 @@ namespace MyTelegramBot.HandleUpdates
             {
                 if (UserQuery != null)
                 {
-                    UserQuery.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id, null);
-                    if (Aupdate?.Message?.From is not null)
-                        if (!UserQuery.HasOpenedMessages(vuser?.Id))
-                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Оператор ответит вам в ближайшее время");
+                    if (Aupdate?.Message?.Chat != null)
+                    {
+                        var vHasOpenedMessages = UserQuery.HasOpenedMessages(vuser?.Id);
+                        UserQuery.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id, null);
+                        long? answerer_ident = UserQuery.GetAnswererIdent(vuser?.Id);
+                        if (answerer_ident != null && answerer_ident != 0)
+                            await AbotClient.SendMessage(answerer_ident, Aupdate?.Message?.Text);
+                        if (Aupdate?.Message?.From is not null)
+                            if (!vHasOpenedMessages)
+                                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Оператор ответит вам в ближайшее время");
+                    }
                 }
             }
 

@@ -40,6 +40,28 @@ namespace MyTelegramBot.HandleUpdates
             return new InlineKeyboardMarkup(keyboardRows);
         }
 
+        public async Task ShowDefaultButtons(ITelegramBotClient AbotClient, Update? Aupdate, int ALevel)
+        {
+            var keyboard = new ReplyKeyboardMarkup();
+            keyboard.ResizeKeyboard = true;
+
+            var info = "Добавлены кнопки";
+
+            keyboard.AddButton(new KeyboardButton("/start"));
+
+
+            long? vChatId = null;
+            if (Aupdate?.Message is not null)
+                vChatId = Aupdate.Message?.Chat?.Id;
+            else
+            if (Aupdate?.CallbackQuery?.Message?.Chat is not null)
+                vChatId = Aupdate.CallbackQuery.Message.Chat.Id;
+
+            if (vChatId != null)
+                await AbotClient.SendMessage(vChatId, info, replyMarkup: keyboard);
+        }
+
+
         public async Task HideInlineKeyboard(ITelegramBotClient AbotClient, Update? Aupdate)
         {
             #pragma warning disable CS8602
@@ -128,8 +150,8 @@ namespace MyTelegramBot.HandleUpdates
                 return;
             if (vuser?.Roles_id == RolesEnum.reUnknown)
                 vuser.Roles_id = RolesEnum.reUser;
-            if (vuser?.Roles_id != RolesEnum.reUser)
-                return;
+            //if (vuser?.Roles_id != RolesEnum.reUser)
+            //    return;
             
             if (Aupdate?.Message?.Text?[0] == '/')
             {
@@ -184,15 +206,15 @@ namespace MyTelegramBot.HandleUpdates
                     switch (strs[0])
                     {
                         case _rolekeybord:
-                            var vRoleId = int.Parse(strs[1]);
+                            RolesEnum vRoleId = (RolesEnum)int.Parse(strs[1]);
                             var vRoleName = BotSession?.Roles?[vRoleId] ?? "";
                             if (vRoleName != string.Empty)
                                 await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, $"Ваша роль {vRoleName}");
-                            UserQuery?.SetUserRole(Aupdate?.Message?.From?.Id, (RolesEnum)vRoleId);
+                            UserQuery?.SetUserRole(Aupdate?.CallbackQuery?.From?.Id, vRoleId);
                             await HideInlineKeyboard(AbotClient, Aupdate);
 
                             if (BotSession != null)
-                                await BotSession.DoGetMenuRolesDelegates(AbotClient, Aupdate, (RolesEnum)vRoleId);
+                                await BotSession.DoGetMenuRolesDelegates(AbotClient, Aupdate, vRoleId);
                             break;                        
 
                         default:

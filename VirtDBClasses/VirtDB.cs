@@ -23,6 +23,7 @@ namespace MyTelegramBot.VirtDBClasses
         public static List<CustomUser> tUsers { get; } = new();
         public static List<CustomUserTopic> tUserTopics { get; } = new();
         public static List<CustomUserRole> tUserRoles { get; } = new();
+        public static List<DelayedChats> tDelayedChats { get; } = new();
 
         private static void FillRoles()
         {
@@ -72,7 +73,6 @@ namespace MyTelegramBot.VirtDBClasses
             tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = RolesEnum.reAdmin, Enabled = true });
             tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = RolesEnum.reOperator, Enabled = true });
         }
-
-
+        
     }
 }

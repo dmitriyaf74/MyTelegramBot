@@ -24,5 +24,10 @@ namespace MyTelegramBot.Interfaces
         public List<CustomUserMessage> GetUserMessages(long? AUserId);
         public void SetActiveSenderId(long? AUser_Id, long? ASender_id);
         public void CloseActiveMessages(long? ASender_id);
+        public void DelayChat(long? AUser_id, long? AChat_id);
+        public void ResumeChat(long? AChat_id);
+        public List<DelayedChats> GetDelayedChats(long? AUser_id);
+        public long? GetAnswererIdent(long? AUser_id);
+
     }
 }

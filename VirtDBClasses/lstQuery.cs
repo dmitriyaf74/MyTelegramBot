@@ -32,8 +32,9 @@ namespace MyTelegramBot.VirtDBClasses
 
         public long InsertUser(CustomUser Auser)
         {
+            Auser.Id = (VirtDB.tUsers.Max(i => i.Id) ?? 0)+1;
             VirtDB.tUsers.Add(Auser);
-            return 0;
+            return Auser.Id ?? 0;
         }
         public CustomUser? SelectUserByIdent(long? AUser_Ident)
         {
@@ -103,7 +104,7 @@ namespace MyTelegramBot.VirtDBClasses
         public (long?, long?) GetOldestMessageUserId()
         {
             return VirtDB.tUserMessages.
-                Where(x => x.IsNew = true).
+                Where(x => x.IsNew == true).
                 OrderBy(x => x.Date_Time).
                 Select(x => (x.User_Id,x.Topic_Id)).FirstOrDefault();
         }
@@ -126,6 +127,36 @@ namespace MyTelegramBot.VirtDBClasses
             var vMes = GetUserMessages(ASender_id);
             foreach (var item in vMes)
                 item.IsNew = false;
+        }
+        public void DelayChat(long? AUser_id, long? AChat_id)
+        {
+            DelayedChats? item = VirtDB.tDelayedChats.
+                Where(x => x.Chat_Id == AChat_id).FirstOrDefault();
+            if (item == null)
+            {
+                item = new DelayedChats();
+                VirtDB.tDelayedChats.Add(item);
+            }
+            item.User_Id = AUser_id ?? 0;
+            item.Chat_Id = AChat_id ?? 0;
+            item.Enabled = true;
+        }
+        public void ResumeChat(long? AChat_id)
+        {
+            DelayedChats? t = VirtDB.tDelayedChats.
+                Where(x => x.Chat_Id == AChat_id).FirstOrDefault();
+            if (t != null)
+                t.Enabled = false;
+        }
+        public List<DelayedChats> GetDelayedChats(long? AUser_id)
+        {
+            return VirtDB.tDelayedChats;
+        }
+        public long? GetAnswererIdent(long? AUser_id)
+        {
+            return VirtDB.tUsers.
+                Where(x => x.Sender_Id == AUser_id).
+                Select(x => x.User_Ident).FirstOrDefault();
         }
     }
 }

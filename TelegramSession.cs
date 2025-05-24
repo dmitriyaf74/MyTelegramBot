@@ -43,7 +43,7 @@ internal class TelegramSession
 
 
 
-    public Dictionary<int, string?>? Roles = new();
+    public Dictionary<RolesEnum, string?>? Roles = new();
 
     public ProcShowMessage? procShowMessage { get; set; }
     protected void DoConShowMessage(string message)
@@ -66,7 +66,7 @@ internal class TelegramSession
         var rList = QueryUser?.GetAllRoles();
         if (rList != null)
             foreach (var r in rList)
-                Roles.Add((int)r.Id, r.Name);
+                Roles.Add(r.Id, r.Name);
     }
     
     public async Task DoGetMenuRolesDelegates(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)

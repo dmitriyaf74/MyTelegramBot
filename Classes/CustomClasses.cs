@@ -56,4 +56,12 @@
 
     }
 
+    internal class DelayedChats
+    {
+        public long User_Id { get; set; }
+        public long Chat_Id { get; set; }
+        public bool Enabled { get; set; }
+
+    }
+
 }
