@@ -18,8 +18,11 @@ namespace MyTelegramBot.Interfaces
         public void SetUserRole(long? Auser_ident, RolesEnum? Aroles_id);
         public void SetUserTopicId(long? Auser_ident, long? Atopic_id);
         public List<CustomUserTopic> GetTopics();
-        public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id);
-        public long GetOldestMessageUserId();
+        public bool HasOpenedMessages(long? Auser_id);
+        public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id, long? AAnswerer_id);
+        public (long?, long?) GetOldestMessageUserId();
         public List<CustomUserMessage> GetUserMessages(long? AUserId);
+        public void SetActiveSenderId(long? AUser_Id, long? ASender_id);
+        public void CloseActiveMessages(long? ASender_id);
     }
 }

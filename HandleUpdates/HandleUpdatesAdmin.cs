@@ -58,15 +58,6 @@ namespace MyTelegramBot.HandleUpdates
                                   HandleUpdatesUtils.GetKeyBoard(keyboardList, _adminkeybord));
         }
 
-
-
-        /// <summary>
-        /// Admin Buttons
-        /// </summary>
-        /// <param name="AbotClient"></param>
-        /// <param name="Aupdate"></param>
-        /// <param name="Atoken"></param>
-        /// <returns></returns>
         protected override async Task UpdateCallBackKeyboard(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.CallbackQuery?.Message is not null)
@@ -83,7 +74,6 @@ namespace MyTelegramBot.HandleUpdates
                                 case (int)AdminButtons._ShowNewUsers:
                                     await AbotClient.SendMessage(
                                         chatId: Aupdate.CallbackQuery.Message.Chat.Id,
-                                        //text: $"Тут будет таблица с новыми пользователями!\n{GenerateHtmlTable()}",
                                         text: $"Таблица с новыми пользователями!",
                                         parseMode: ParseMode.Html);
 

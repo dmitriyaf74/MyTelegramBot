@@ -1,5 +1,6 @@
 ﻿using MyTelegramBot.Classes;
 using MyTelegramBot.Interfaces;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,6 @@ namespace MyTelegramBot.HandleUpdates
 
 
         private const string cstrGetOldestMessage = "/Получить обращение";
-        private const string cstrGetEstimation = "/Оценить оператора";
         private const string cstrGetCloseDialog = "/Завершить диалог";
         private const string _operatorquerysbord = "operatorquerysbord";
         private enum OperatorButtons
@@ -49,15 +49,15 @@ namespace MyTelegramBot.HandleUpdates
             var info = "Выберите доступную роль";
 
             keyboard.AddButton(new KeyboardButton(cstrGetOldestMessage));
-            keyboard.AddButton(new KeyboardButton(cstrGetEstimation));
             keyboard.AddButton(new KeyboardButton(cstrGetCloseDialog));
 
 
             long? vChatId = null;
             if (Aupdate?.Message is not null)
-                vChatId = Aupdate?.Message?.Chat?.Id;
+                vChatId = Aupdate.Message?.Chat?.Id;
             else
-                vChatId = Aupdate?.CallbackQuery?.Message?.Chat?.Id;
+            if (Aupdate?.CallbackQuery?.Message?.Chat is not null)
+                vChatId = Aupdate.CallbackQuery.Message.Chat.Id;
 
             if (vChatId != null)
                 await AbotClient.SendMessage(vChatId, info, replyMarkup: keyboard);
@@ -67,32 +67,32 @@ namespace MyTelegramBot.HandleUpdates
         {
             if (Aupdate?.Message?.Text == string.Empty || Aupdate?.Message?.Text?[0] == '\0')
                 return;
-            var vuser = HandleUpdatesUtils.GetUser(Aupdate);
+            var vuser = HandleUpdatesUtils.GetUser();
+            if (vuser?.Roles_id != RolesEnum.reOperator)
+                return;
 
             if (Aupdate?.Message?.Text?[0] == '/')
             {
                 switch (Aupdate.Message.Text)
                 {
-                    /*
-                                запросить старый запрос, получить пользователя и выдать всю переписку с ним, отмечая вопрос-ответ
-                                запросить у пользователя оценку работы оператора
-                                отправлять сообщение пользователю в чат и сохранять в БД
-                                код чата прописывать при старте и в момент отправки сообщения
-
-                                 */
+                    //Получить все сообщения самого давнего обратившегося
                     case cstrGetOldestMessage:
                         {
                             if (Aupdate.Message.From is null)
                                 return;
 
 
-                            var vMessageUserId = UserQuery?.GetOldestMessageUserId();
+                            long? vMessageUserId = null;
+                            long? vTopycId = null;
+                            if (UserQuery != null)
+                                (vMessageUserId, vTopycId) = UserQuery.GetOldestMessageUserId();
                             var vUserMessages = UserQuery?.GetUserMessages(vMessageUserId);
                             if (vUserMessages?.Count > 0)
                             {
                                 var vMessage = "";
                                 var IsNewStr = "";
-                                var vUser = UserQuery?.SelectUserById(vUserMessages[0].User_Id);
+                                var vSender = UserQuery?.SelectUserById(vUserMessages[0].User_Id);
+                                var vTopics = UserQuery?.GetTopics();
                                 foreach (var item in vUserMessages)
                                 {
                                     var vAnswerer = UserQuery?.SelectUserById(vUserMessages[0].Answerer_Id);
@@ -100,29 +100,43 @@ namespace MyTelegramBot.HandleUpdates
                                         IsNewStr = "Новое\n";
                                     else
                                         IsNewStr = "";
+
+                                    var vTopicName = vTopics != null 
+                                        ? vTopics?.Where(x => x.Id == item.Topic_Id).Select(x => x.Name)?.FirstOrDefault()?.ToString() + "\n"
+                                        : "";
+
                                     if (vAnswerer != null)
-                                        vMessage = $"{IsNewStr}{item.Date_Time} Оператор: {vAnswerer.UserName} \n{item.MessageStr}";
+                                        vMessage = $"{vTopicName}{IsNewStr}{item.Date_Time} Оператор: {vAnswerer.UserName} \n{item.MessageStr}";
                                     else
-                                        vMessage = $"{IsNewStr}{item.Date_Time} Пользователь: {vUser?.UserName} \n{item.MessageStr}";
+                                        vMessage = $"{vTopicName}{IsNewStr}{item.Date_Time} Пользователь: {vSender?.UserName} \n{item.MessageStr}";
+
                                     await AbotClient.SendMessage(Aupdate.Message.Chat.Id, vMessage);
                                 }
+                                if (vSender?.Id != vuser?.Id)
+                                    UserQuery?.SetActiveSenderId(vuser?.Id, vUserMessages[0].User_Id);
                             }
                             else
+                            {
                                 await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Нет непрочитанных сообщений");
+                                if (vuser is not null)
+                                    UserQuery?.SetActiveSenderId(vuser.Id, null);
+                            }
                             break;
                         }
-                    case cstrGetEstimation:
-                        break;
                     case cstrGetCloseDialog:
+                        if ((vuser is not null) && (Aupdate?.Message?.Text is not null))
                         {
-                            ReplyKeyboardRemove replyKeyboardRemove = new();
-
-                            await AbotClient.SendMessage(
-                                chatId: Aupdate.Message.Chat.Id,
-                                text: "Клавиатура скрыта.",
-                                replyMarkup: replyKeyboardRemove);
-                            break;
+                            var vMessage = "Спасибо за обращение. В любой момент вы можете обратиться снова";
+                            var vsender = UserQuery?.SelectUserById(vuser.Sender_Id);
+                            //Отправляем сообщение пользователю
+                            if (vsender?.User_Ident != null)
+                                await AbotClient.SendMessage(vsender.User_Ident, vMessage);
+                            //Отправляем сообщение оператору
+                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, vMessage);
+                            //Закрываем диалог
+                            UserQuery?.CloseActiveMessages(vuser.Sender_Id);
                         }
+                        break;
                     default:
                         break;
 
@@ -130,9 +144,21 @@ namespace MyTelegramBot.HandleUpdates
             }
             else
             {
-                if (vuser?.Roles_id != RolesEnum.reOperator)
-                    return;
-                //UserQuery?.AddOperatorMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id);
+                if (vuser?.Sender_Id is null)
+                    throw new ArgumentNullException("Отправитель", "Значение не указано.");
+
+                UserQuery?.AddMessage(vuser.Sender_Id, Aupdate?.Message?.Text, vuser?.Topic_id, vuser?.Id);
+                if ((vuser is not null) && (Aupdate?.Message?.Text is not null))
+                {
+                    var vsender = UserQuery?.SelectUserById(vuser.Sender_Id);
+                    //Отправляем сообщение пользователю
+                    if (vsender?.User_Ident != null)
+                        await AbotClient.SendMessage(vsender.User_Ident, Aupdate.Message.Text);
+                    //Отправляем сообщение оператору
+                    await AbotClient.SendMessage(Aupdate.Message.Chat.Id, Aupdate.Message.Text);
+                    //Закрываем диалог
+                    UserQuery?.CloseActiveMessages(vuser.Sender_Id);
+                }
                 DoConShowMessage($"Оператор");
             }
 

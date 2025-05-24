@@ -21,7 +21,6 @@ namespace MyTelegramBot.DapperClasses
             ConnectionString = AconnectionString;
         }
 
-        #region UserInfo
         public List<CustomRole> SelectRoles(long? Auser_id)
         {
             string sql = @"select r.id, r.name 
@@ -33,7 +32,7 @@ namespace MyTelegramBot.DapperClasses
             object parameters = new { user_id = Auser_id };
             return dbHelper.GetList<CustomRole>(sql, parameters);
         }
-                        
+
         public long InsertUser(CustomUser Auser)
         {
             string sql = @"INSERT INTO userlist(username, user_ident, firstname, lastname, roles_id, topic_id)
@@ -50,7 +49,7 @@ namespace MyTelegramBot.DapperClasses
         }
         public CustomUser? SelectUserByIdent(long? AUser_Ident)
         {
-            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id
+            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id, sender_id
                 FROM userlist WHERE user_ident = @user_ident";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
@@ -62,7 +61,7 @@ namespace MyTelegramBot.DapperClasses
 
         public CustomUser? SelectUserById(long? AUser_Id)
         {
-            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id
+            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id, sender_id
                 FROM userlist WHERE id = @user_id";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
@@ -74,15 +73,12 @@ namespace MyTelegramBot.DapperClasses
 
         public List<CustomUser> SelectNewUsers()
         {
-            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id
+            string sql = @"SELECT id, username, user_ident, firstname, lastname, roles_id, topic_id, sender_id
                 FROM userlist WHERE is_new = true";
             DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
             return dbHelper.GetList<CustomUser>(sql);
         }
-                
-        #endregion UserInfo
 
-        #region Roles
         public List<CustomRole> GetAllRoles()
         {
             string sql = @"select r.id, r.name from roles r";
@@ -98,7 +94,7 @@ namespace MyTelegramBot.DapperClasses
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                var vParam = new { user_id = Auser_ident, roles_id = Aroles_id };
+                var vParam = new { user_ident = Auser_ident, roles_id = Aroles_id };
                 connection.QuerySingle<int>(sql, vParam);
 
             }
@@ -118,9 +114,6 @@ namespace MyTelegramBot.DapperClasses
             }
         }
 
-        #endregion Roles
-
-        #region UserQuery
         public List<CustomUserTopic> GetTopics()
         {
             string sql = @"select ut.id, ut.name, ut.parent_id from user_topics ut";
@@ -128,30 +121,48 @@ namespace MyTelegramBot.DapperClasses
             return dbHelper.GetList<CustomUserTopic>(sql);
         }
 
-        public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id)
+        public bool HasOpenedMessages(long? Auser_id)
         {
-            string sql = @"insert into user_messages(user_id, message_str, topic_id) 
-                values (@user_id, @message_str, @topic_id); 
+            string sql = @"select 1 from user_messages um where um.is_new = true and um.user_id = @user_id limit 1";
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = Auser_id };
+                return connection.ExecuteScalar<int>(sql, vParam) == 1;
+            }
+        }
+
+        public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id, long? AAnswerer_id)
+        {
+            string sql = @"insert into user_messages(user_id, message_str, topic_id, answerer_id) 
+                values (@user_id, @message_str, @topic_id, @answerer_id); 
                 SELECT 1;";
 
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                var vParam = new { user_id = Auser_id, message_str = AMessageStr, topic_id = Atopic_id };
+                var vParam = new { user_id = Auser_id, message_str = AMessageStr, topic_id = Atopic_id, answerer_id = AAnswerer_id };
                 connection.QuerySingle<int>(sql, vParam);
 
             }
         }
-        #endregion UserQuery
-        public long GetOldestMessageUserId()
+
+        public (long?, long?) GetOldestMessageUserId()
         {
-            string sql = @"select um.user_id from user_messages um where um.is_new = true order by um.datetime limit 1";
+            string sql = @"select um.user_id, um.topic_id from user_messages um where um.is_new = true and um.answerer_id is null order by um.datetime limit 1";
             using (var connection = new NpgsqlConnection(ConnectionString))
             {
                 connection.Open();
-                var vParam = new {};
-                return connection.ExecuteScalar<int>(sql, vParam);
+                using (var command = new NpgsqlCommand(sql, connection))
+                using (var reader = command.ExecuteReader())
+                    if (reader.Read())
+                    {
+                        //var vParam = new { };
+                        //return connection.ExecuteScalar < int; int> (sql, vParam);
+                        return (reader.GetInt64(0), reader.GetInt64(0));
+                    }
             }
+            return (null, null);
         }
 
         public List<CustomUserMessage> GetUserMessages(long? AUserId)
@@ -159,11 +170,38 @@ namespace MyTelegramBot.DapperClasses
             string sql = @"select um.user_id User_Id, um.message_str MessageStr, um.datetime Date_Time, 
                 um.delivered Delivered, um.answerer_id Answerer_Id, um.topic_id Topic_Id, um.is_new IsNew
                 from user_messages um 
-                where um.user_id = @user_id 
+                where um.user_id = @user_id
                 order by um.datetime";
             DatabaseHelper dbHelper = new DatabaseHelper(ConnectionString);
             var vParam = new { user_id = AUserId };
             return dbHelper.GetList<CustomUserMessage>(sql, vParam);
+        }
+
+        public void SetActiveSenderId(long? AUser_Id, long? ASender_id)
+        {
+            string sql = @"UPDATE userlist set sender_id = @sender_id where id = @user_id;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = AUser_Id, sender_id = ASender_id };
+                connection.QuerySingle<int>(sql, vParam);
+
+            }
+        }
+        public void CloseActiveMessages(long? ASender_id)
+        {
+            string sql = @"UPDATE user_messages set is_new = false where user_id = @user_id;
+                SELECT 1;";
+
+            using (var connection = new NpgsqlConnection(ConnectionString))
+            {
+                connection.Open();
+                var vParam = new { user_id = ASender_id };
+                connection.QuerySingle<int>(sql, vParam);
+
+            }
         }
 
     }

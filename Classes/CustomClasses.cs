@@ -10,7 +10,7 @@
 
     internal class CustomRole
     {
-        public long Id { get; set; }
+        public RolesEnum Id { get; set; }
         public string? Name { get; set; }
 
     }
@@ -36,6 +36,7 @@
         public RolesEnum? Roles_id { get; set; }
         public long? Topic_id {  get; set; }
         public bool Is_New { get; set; }
+        public long? Sender_Id { get; set; }
 
     }
     
@@ -50,7 +51,7 @@
     internal class CustomUserRole
     {
         public long User_Id { get; set; }
-        public long Role_Id { get; set; }
+        public RolesEnum Role_Id { get; set; }
         public bool Enabled { get; set; }
 
     }

@@ -27,9 +27,9 @@ namespace MyTelegramBot.VirtDBClasses
         private static void FillRoles()
         {
             tRoles.Clear();
-            tRoles.Add(new CustomRole() { Id = 1, Name = "Пользователь" });
-            tRoles.Add(new CustomRole() { Id = 2, Name = "Администратор" });
-            tRoles.Add(new CustomRole() { Id = 3, Name = "Оператор" });
+            tRoles.Add(new CustomRole() { Id = RolesEnum.reUser, Name = "Пользователь" });
+            tRoles.Add(new CustomRole() { Id = RolesEnum.reAdmin, Name = "Администратор" });
+            tRoles.Add(new CustomRole() { Id = RolesEnum.reOperator, Name = "Оператор" });
         }
         private static void FillUserMessages()
         {
@@ -38,7 +38,7 @@ namespace MyTelegramBot.VirtDBClasses
         private static void FillUsers()
         {
             tUsers.Clear();
-            tUsers.Add(new CustomUser() { Id = 1, UserName = "Dmitry", Roles_id = RolesEnum.reUser, User_Ident = 311068358, Is_New = true });
+            tUsers.Add(new CustomUser() { Id = 1, UserName = "Dmitry", Roles_id = RolesEnum.reOperator, User_Ident = 311068358, Is_New = true });
         }
         private static void FillUserTopics()
         {
@@ -68,9 +68,9 @@ namespace MyTelegramBot.VirtDBClasses
         private static void FillUserRoles()
         {
             tUserRoles.Clear();
-            tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = 1, Enabled = true });
-            tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = 2, Enabled = true });
-            tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = 3, Enabled = true });
+            tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = RolesEnum.reUser, Enabled = true });
+            tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = RolesEnum.reAdmin, Enabled = true });
+            tUserRoles.Add(new CustomUserRole() { User_Id = 1, Role_Id = RolesEnum.reOperator, Enabled = true });
         }
 
 

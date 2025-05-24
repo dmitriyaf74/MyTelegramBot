@@ -1,4 +1,5 @@
-﻿using MyTelegramBot.Classes;
+﻿using Dapper;
+using MyTelegramBot.Classes;
 using MyTelegramBot.DapperClasses;
 using MyTelegramBot.Interfaces;
 using Npgsql;
@@ -17,7 +18,6 @@ namespace MyTelegramBot.VirtDBClasses
         {            
         }
 
-        #region UserInfo
         public List<CustomRole> SelectRoles(long? Auser_id)
         {
             var filteredUserRoles = VirtDB.tUserRoles.
@@ -53,9 +53,6 @@ namespace MyTelegramBot.VirtDBClasses
                 Where(x => x.Is_New == true).ToList();
         }
 
-        #endregion UserInfo
-
-        #region Roles
         public List<CustomRole> GetAllRoles()
         {
             return VirtDB.tRoles;
@@ -79,15 +76,16 @@ namespace MyTelegramBot.VirtDBClasses
             }
         }
 
-        #endregion Roles
-
-        #region UserQuery
         public List<CustomUserTopic> GetTopics()
         {
             return VirtDB.tUserTopics;
         }
+        public bool HasOpenedMessages(long? Auser_id)
+        {
+            return VirtDB.tUserMessages.Where(x => x.IsNew == true && x.User_Id == Auser_id).Any();
+        }
 
-        public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id)
+        public void AddMessage(long? Auser_id, string? AMessageStr, long? Atopic_id, long? AAnswerer_id)
         {
             CustomUserMessage mes = new() 
             { 
@@ -97,22 +95,37 @@ namespace MyTelegramBot.VirtDBClasses
                 Date_Time = DateTime.Now,
                 Delivered = false,
                 IsNew = true,
+                Answerer_Id = AAnswerer_id,
             };
             VirtDB.tUserMessages.Add(mes);
         }
-        #endregion UserQuery
-        public long GetOldestMessageUserId()
+
+        public (long?, long?) GetOldestMessageUserId()
         {
             return VirtDB.tUserMessages.
                 Where(x => x.IsNew = true).
                 OrderBy(x => x.Date_Time).
-                Select(x => x.User_Id).FirstOrDefault();
+                Select(x => (x.User_Id,x.Topic_Id)).FirstOrDefault();
         }
 
         public List<CustomUserMessage> GetUserMessages(long? AUserId)
         {
             return VirtDB.tUserMessages.
                 Where(x => x.User_Id == AUserId).ToList();
+        }
+
+        public void SetActiveSenderId(long? AUser_Id, long? ASender_Id)
+        {
+            var vUser = SelectUserById(AUser_Id);
+            if (vUser is not null)
+                vUser.Sender_Id = ASender_Id; 
+        }
+
+        public void CloseActiveMessages(long? ASender_id)
+        {
+            var vMes = GetUserMessages(ASender_id);
+            foreach (var item in vMes)
+                item.IsNew = false;
         }
     }
 }

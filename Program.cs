@@ -43,8 +43,8 @@ namespace HomeWork24
             try
             {
                 NpgsqlConnectionStringBuilder builder = new NpgsqlConnectionStringBuilder(connectionString);
-                string originalDatabase = builder.Database;
-                builder.Database = "postgres1";
+                string? originalDatabase = builder.Database;
+                builder.Database = "postgres";
                 string connectionStringWithoutDatabase = builder.ConnectionString;
 
                 using (var connection = new NpgsqlConnection(connectionStringWithoutDatabase))
@@ -52,7 +52,7 @@ namespace HomeWork24
                     connection.Open();
                     using (var cmd = new NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname='{originalDatabase}'", connection))
                     {
-                        object result = cmd.ExecuteScalar();
+                        object? result = cmd.ExecuteScalar();
                         return result != null && result.ToString() == "1";
                     }
                 }

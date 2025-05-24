@@ -81,7 +81,7 @@ namespace MyTelegramBot.HandleUpdates
         {
             if (Aupdate?.Message?.Text == string.Empty || Aupdate?.Message?.Text?[0] == '\0')
                 return;
-            var vuser = HandleUpdatesUtils.GetUser(Aupdate);
+            var vuser = HandleUpdatesUtils.GetUser();
             if (vuser?.Roles_id == RolesEnum.reUnknown)
                 vuser.Roles_id = RolesEnum.reUser;
             if (vuser?.Roles_id != RolesEnum.reUser)
@@ -103,9 +103,13 @@ namespace MyTelegramBot.HandleUpdates
             }
             else
             {
-                UserQuery?.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id);
-                if (Aupdate?.Message?.From is not null)
-                    await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Оператор ответит вам в ближайшее время");
+                if (UserQuery != null)
+                {
+                    UserQuery.AddMessage(vuser?.Id, Aupdate?.Message?.Text, vuser?.Topic_id, null);
+                    if (Aupdate?.Message?.From is not null)
+                        if (!UserQuery.HasOpenedMessages(vuser?.Id))
+                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Оператор ответит вам в ближайшее время");
+                }
             }
 
 
