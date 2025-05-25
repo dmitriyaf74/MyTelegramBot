@@ -6,8 +6,8 @@ namespace MyTelegramBot.secure
 {
     internal class MyAppConfig
     {
-        public string TelegramApiKey;
-        public string ConnectionString;
+        public string? TelegramApiKey;
+        public string? ConnectionString;
 
         protected void WriteDefaultConfig(string AFileName)
         {

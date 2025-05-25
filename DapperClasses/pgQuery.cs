@@ -162,11 +162,7 @@ namespace MyTelegramBot.DapperClasses
                 using (var command = new NpgsqlCommand(sql, connection))
                 using (var reader = command.ExecuteReader())
                     if (reader.Read())
-                    {
-                        //var vParam = new { };
-                        //return connection.ExecuteScalar < int; int> (sql, vParam);
                         return (reader.GetInt64(0), reader.GetInt64(1));
-                    }
             }
             return (null, null);
         }
@@ -260,7 +256,7 @@ namespace MyTelegramBot.DapperClasses
             {
                 connection.Open();
                 var vParam = new { user_id = AUser_id };
-                return connection.QuerySingle<int>(sql, vParam);
+                return connection.QuerySingleOrDefault<long?>(sql, vParam);
             }
         }
 

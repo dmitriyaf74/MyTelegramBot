@@ -14,7 +14,6 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-//pg_dump -U "postgres" -d "TelegramHelper" -s -f "d:\test\TelegramHelper.sql"
 
 namespace HomeWork24
 {
@@ -44,7 +43,7 @@ namespace HomeWork24
             {
                 NpgsqlConnectionStringBuilder builder = new NpgsqlConnectionStringBuilder(connectionString);
                 string? originalDatabase = builder.Database;
-                builder.Database = "postgres";
+                builder.Database = "postgres1";
                 string connectionStringWithoutDatabase = builder.ConnectionString;
 
                 using (var connection = new NpgsqlConnection(connectionStringWithoutDatabase))
@@ -71,18 +70,18 @@ namespace HomeWork24
             if (!appConfig.ReadConfig())
               return;
 
-            string connectionString = appConfig.ConnectionString;
+            string? connectionString = appConfig.ConnectionString;
 
             ICustomQuery iCustomQuery;
-            if (DatabaseExists(connectionString))
-                iCustomQuery = new pgQuery(connectionString);
+            if (DatabaseExists(connectionString ?? ""))
+                iCustomQuery = new pgQuery(connectionString ?? "");
             else
             {
                 VirtDB.FillDB();
                 iCustomQuery = new lstQuery("");
             }
 
-            var telegramSession = new TelegramSession(appConfig.TelegramApiKey, iCustomQuery);
+            var telegramSession = new TelegramSession(appConfig.TelegramApiKey ?? "", iCustomQuery);
             telegramSession.procShowMessage += Console.WriteLine;
             telegramSession.procShowError += Console.WriteLine;
             telegramSession.procShowMessage += logger.Log;

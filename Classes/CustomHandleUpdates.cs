@@ -35,8 +35,6 @@ namespace MyTelegramBot.Classes
             ref UpdateCallBackDelegate? updCallBackDelegate,
             ref DoGetMenuRoleDelegate? GetMenuRoleDelegate)
         {
-            //////////////////Передавать сюда объект
-
             updRecDelegate += UpdateReceivedStart;
             updCallBackDelegate += UpdateCallBackKeyboard;
             GetMenuRoleDelegate += DoGetMenuRole;

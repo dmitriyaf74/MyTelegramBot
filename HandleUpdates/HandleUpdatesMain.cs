@@ -108,7 +108,6 @@ namespace MyTelegramBot.HandleUpdates
             return keyboardList;
         }
 
-        private CustomUser? CurUser;
         private CustomUser? InitUser(Update? Aupdate)
         {
             var vuser = UserQuery?.SelectUserByIdent(Aupdate?.Message?.From?.Id);
@@ -126,8 +125,7 @@ namespace MyTelegramBot.HandleUpdates
                 vuser.Id = UserQuery?.InsertUser(vuser);
             }
             else
-            if (//(Aupdate?.Message?.Text?.ToLower() == "/start") && 
-                (vuser != null) &&
+            if ((vuser != null) &&
                 (vuser.Roles_id != RolesEnum.reUser) &&
                 (!HasRole(vuser.Roles_id)))
             {
@@ -135,12 +133,7 @@ namespace MyTelegramBot.HandleUpdates
                 if (vuser != null)
                     vuser.Roles_id = RolesEnum.reUser;
             }
-            CurUser = vuser;
             return vuser;
-        }
-        public CustomUser? GetUser()
-        {
-            return CurUser;
         }
 
         protected override async Task UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
@@ -150,8 +143,6 @@ namespace MyTelegramBot.HandleUpdates
                 return;
             if (vuser?.Roles_id == RolesEnum.reUnknown)
                 vuser.Roles_id = RolesEnum.reUser;
-            //if (vuser?.Roles_id != RolesEnum.reUser)
-            //    return;
             
             if (Aupdate?.Message?.Text?[0] == '/')
             {
@@ -162,7 +153,6 @@ namespace MyTelegramBot.HandleUpdates
                         if (Aupdate.Message.From is null)
                             return;
 
-                        //await AbotClient.SendMessage(Aupdate.Message.Chat.Id, $"Здравствуйте {Aupdate?.Message?.From?.FirstName}");
                         await HideKeyboard(AbotClient, Aupdate, $"Здравствуйте {Aupdate?.Message?.From?.FirstName}");
 
                         var info = $"{Aupdate?.Message?.From?.Username}({Aupdate?.Message?.From?.Id})" +

@@ -78,27 +78,13 @@ namespace MyTelegramBot.HandleUpdates
         {
             if (Aupdate?.Message?.Text == string.Empty || Aupdate?.Message?.Text?[0] == '\0')
                 return;
-            var vuser = HandleUpdatesUtils.GetUser();
+            var vuser = UserQuery?.SelectUserByIdent(Aupdate?.Message?.From?.Id);
             if (vuser?.Roles_id == RolesEnum.reUnknown)
                 vuser.Roles_id = RolesEnum.reUser;
             if (vuser?.Roles_id != RolesEnum.reUser)
                 return;
 
-            if (Aupdate?.Message?.Text?[0] == '/')
-            {
-                switch (Aupdate.Message.Text)
-                {
-                    case "/start":
-                        {
-                            if (Aupdate.Message.From is null)
-                                return;
-                            break;
-                        }
-                    default:
-                        break;
-                }
-            }
-            else
+            if (Aupdate?.Message?.Text?[0] != '/')
             {
                 if (UserQuery != null)
                 {

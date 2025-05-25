@@ -32,13 +32,7 @@ namespace MyTelegramBot.HandleUpdates
         private const string cstrGetDelayDialog = "/Отложить диалог";
         private const string cstrGetDelayedDialogs = "/Отложенные диалоги";
         private const string cstrStart = "/start";
-        private const string _operatorquerysbord = "operatorquerysbord";
         private const string _delayedchatsbord = "delayedchatsbord";
-        private enum OperatorButtons
-        {
-            _QueryOldestMessage,
-            _Queryestimation,
-        }
 
         protected override async Task DoGetMenuRole(ITelegramBotClient AbotClient, Update? Aupdate, RolesEnum? ARole_Id)
         {
@@ -54,9 +48,6 @@ namespace MyTelegramBot.HandleUpdates
             buttons.Add(new KeyboardButton[] { new KeyboardButton(cstrGetDelayDialog), new KeyboardButton(cstrGetDelayedDialogs) });
             buttons.Add(new KeyboardButton[] { new KeyboardButton(cstrStart) });
             var keyboard = new ReplyKeyboardMarkup(buttons);
-
-
-
 
             long? vChatId = null;
             if (Aupdate?.Message is not null)
@@ -84,20 +75,18 @@ namespace MyTelegramBot.HandleUpdates
                 var row = new List<InlineKeyboardButton> { button };
                 keyboardRows.Add(row);
             }
-            var KB = new InlineKeyboardMarkup(keyboardRows);
 
-            if (Aupdate?.Message is not null)
-                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Выберите чат:", replyMarkup: KB);
-            else
-            if (Aupdate?.CallbackQuery?.Message is not null)
-                await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Выберите чат:", replyMarkup: KB);
+            var vText = keyboardRows.Count > 0 ? "Выберите чат для активации:" : "Нет отложенных диалогов";
+            var vChatId = Aupdate?.Message is not null ? Aupdate.Message.Chat.Id : Aupdate?.CallbackQuery?.Message?.Chat?.Id;
+            if (vChatId is not null)
+                await AbotClient.SendMessage(vChatId, vText, replyMarkup: new InlineKeyboardMarkup(keyboardRows));
         }
 
         protected override async Task UpdateReceivedStart(ITelegramBotClient AbotClient, Update Aupdate, CancellationToken Atoken)
         {
             if (Aupdate?.Message?.Text == string.Empty || Aupdate?.Message?.Text?[0] == '\0')
                 return;
-            var vuser = HandleUpdatesUtils.GetUser();
+            var vuser = UserQuery?.SelectUserByIdent(Aupdate?.Message?.From?.Id);
             if (vuser?.Roles_id != RolesEnum.reOperator)
                 return;
 
@@ -142,8 +131,7 @@ namespace MyTelegramBot.HandleUpdates
 
                                     await AbotClient.SendMessage(Aupdate.Message.Chat.Id, vMessage);
                                 }
-                                //if (vSender?.Id != vuser?.Id)
-                                    UserQuery?.SetActiveSenderId(vuser?.Id, vUserMessages[0].User_Id);
+                                UserQuery?.SetActiveSenderId(vuser?.Id, vUserMessages[0].User_Id);
                             }
                             else
                             {
@@ -172,8 +160,11 @@ namespace MyTelegramBot.HandleUpdates
                         if ((vuser is not null) && (Aupdate?.Message is not null))
                         {
                             if (vuser.Sender_Id != null)
-                              UserQuery?.DelayChat(vuser.Id, vuser.Sender_Id);
-                            await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Диалог отложен");
+                            {
+                                UserQuery?.DelayChat(vuser.Id, vuser.Sender_Id);
+                                UserQuery?.SetActiveSenderId(vuser.Id, null);
+                                await AbotClient.SendMessage(Aupdate.Message.Chat.Id, "Диалог отложен");
+                            }
                         }
                         break;
                     case cstrGetDelayedDialogs:
@@ -216,37 +207,15 @@ namespace MyTelegramBot.HandleUpdates
         {
             if (Aupdate?.CallbackQuery?.Message is not null)
             {
-                var strs = Aupdate.CallbackQuery.Data?.Split('.');
-                if ((strs?.Length > 1) && (BotSession is not null))
+                var vuser = UserQuery?.SelectUserByIdent(Aupdate?.CallbackQuery?.From?.Id) ?? new();
+                var strs = Aupdate?.CallbackQuery.Data?.Split('.');
+                if ((strs?.Length > 1) && (BotSession is not null) && (Aupdate?.CallbackQuery.Message.Chat.Id != null))
                 {
                     switch (strs[0])
-                    {
-                        case _operatorquerysbord:
-                            await HandleUpdatesUtils.HideInlineKeyboard(AbotClient, Aupdate);
-                            switch (int.Parse(strs[1]))
-                            {
-                                case (int)OperatorButtons._QueryOldestMessage:
-                                    await AbotClient.SendMessage(
-                                        chatId: Aupdate.CallbackQuery.Message.Chat.Id,
-                                        //text: $"Тут будет таблица с новыми пользователями!\n{GenerateHtmlTable()}",
-                                        text: $"Таблица с новыми пользователями!",
-                                        parseMode: ParseMode.Html);
-
-
-                                    break;
-
-                                case (int)OperatorButtons._Queryestimation:
-                                    await AbotClient.SendMessage(
-                                        chatId: Aupdate.CallbackQuery.Message.Chat.Id,
-                                        text: $"Привет!",
-                                        parseMode: ParseMode.Html);
-                                    break;
-                                default:
-                                    break;
-                            }
-                            break;
+                    {                        
                         case _delayedchatsbord:
                             UserQuery?.ResumeChat(int.Parse(strs[1]));
+                            UserQuery?.SetActiveSenderId(vuser.Id, int.Parse(strs[1]));
                             _HandleUpdatesUtils?.HideInlineKeyboard(AbotClient, Aupdate);
                             await AbotClient.SendMessage(Aupdate.CallbackQuery.Message.Chat.Id, "Диалог восстановлен");
                             break;

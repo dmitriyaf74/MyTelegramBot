@@ -21,7 +21,7 @@ namespace MyTelegramBot.VirtDBClasses
         public List<CustomRole> SelectRoles(long? Auser_id)
         {
             var filteredUserRoles = VirtDB.tUserRoles.
-                Where(x => x.User_Id == Auser_id).ToList();
+                Where(x => x.User_Id == Auser_id && x.Enabled == true).ToList();
 
             var query = (from сustomRole in VirtDB.tRoles
                         join сustomUserRole in filteredUserRoles on сustomRole.Id equals сustomUserRole.Role_Id
@@ -103,10 +103,20 @@ namespace MyTelegramBot.VirtDBClasses
 
         public (long?, long?) GetOldestMessageUserId()
         {
-            return VirtDB.tUserMessages.
+            var vFilteredMes = VirtDB.tUserMessages.
                 Where(x => x.IsNew == true).
-                OrderBy(x => x.Date_Time).
-                Select(x => (x.User_Id,x.Topic_Id)).FirstOrDefault();
+                OrderBy(x => x.Date_Time).ToList();
+
+            var filteredDelayChats = VirtDB.tDelayedChats.
+                Where(x => x.Enabled == true).ToList();
+
+            var vMes = (from сustomMes in vFilteredMes
+                        join сustomChat in filteredDelayChats on сustomMes.User_Id equals сustomChat.Chat_Id into lj
+            from leftJoin in lj.DefaultIfEmpty()
+            where leftJoin == null
+            select сustomMes).FirstOrDefault();
+
+            return (vMes?.User_Id, vMes?.Topic_Id);
         }
 
         public List<CustomUserMessage> GetUserMessages(long? AUserId)
