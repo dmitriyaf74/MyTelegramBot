@@ -43,7 +43,7 @@ namespace HomeWork24
             {
                 NpgsqlConnectionStringBuilder builder = new NpgsqlConnectionStringBuilder(connectionString);
                 string? originalDatabase = builder.Database;
-                builder.Database = "postgres1";
+                builder.Database = "postgres";
                 string connectionStringWithoutDatabase = builder.ConnectionString;
 
                 using (var connection = new NpgsqlConnection(connectionStringWithoutDatabase))
